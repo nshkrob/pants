@@ -9,11 +9,9 @@ from collections import defaultdict
 import os
 import shutil
 
-from twitter.common.dirutil import safe_mkdir
-
 from pants.backend.core.tasks.task import Task
 from pants.goal.products import MultipleRootedProducts
-
+from pants.util.dirutil import safe_mkdir
 
 class PrepareResources(Task):
 
@@ -27,6 +25,11 @@ class PrepareResources(Task):
 
   def prepare(self, round_manager):
     round_manager.require_data('exclusives_groups')
+    # NOTE(Garrett Malmquist): This is a fake dependency to force resources to occur after jvm
+    # compile. It solves some problems we've been having getting our annotation processors to
+    # compile consistently due to extraneous resources polluting the classpath. Perhaps this could
+    # be fixed more elegantly whenever we get a formal classpath object?
+    round_manager.require_data('classes_by_target')
 
   def execute(self):
     if self.context.products.is_required_data('resources_by_target'):

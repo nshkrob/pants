@@ -80,8 +80,8 @@ python_library(
   dependencies = [
     pants(':hash_utils'),
     pants(':target'), # XXX(fixme)
-    pants('3rdparty/python/twitter/commons:twitter.common.dirutil'),
     pants('src/python/pants/fs'),
+    pants('src/python/pants/util:dirutil'),
   ]
 )
 
@@ -144,9 +144,6 @@ python_library(
 python_library(
   name = 'exceptions',
   sources = ['exceptions.py'],
-  dependencies = [
-    pants(':build_manual'),
-  ]
 )
 
 python_library(
@@ -211,7 +208,7 @@ python_library(
   sources = ['run_info.py'],
   dependencies = [
     pants(':build_environment'),
-    pants('3rdparty/python/twitter/commons:twitter.common.dirutil'),
+    pants('src/python/pants/util:dirutil'),
   ],
 )
 
@@ -273,7 +270,7 @@ python_library(
   name = 'workunit',
   sources = ['workunit.py'],
   dependencies = [
-    pants('3rdparty/python/twitter/commons:twitter.common.dirutil'),
     pants('src/python/pants/rwbuf'),
+    pants('src/python/pants/util:dirutil'),
   ],
 )
