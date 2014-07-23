@@ -8,6 +8,7 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
 from argparse import ArgumentParser
 import copy
 
+from pants.option.help_formatter import PantsHelpFormatter
 from pants.option.ranked_value import RankedValue
 
 
@@ -31,7 +32,13 @@ class Parser(object):
     self._config = config
     self._scope = scope
     self._locked = False  # If True, no more registration is allowed on this parser.
+    # The argparser we use for actually parsing args.
     self._argparser = ArgumentParser(conflict_handler='resolve')
+
+    # The argparser we use for formatting help messages.
+    self._help_argparser = ArgumentParser(conflict_handler='resolve',
+                                          formatter_class=PantsHelpFormatter)
+
     self._dest_forwardings = {}  # arg to dest.
     self._parent_parser = parent_parser  # A Parser instance, or None for the global scope parser.
     self._child_parsers = []  # List of Parser instances.
@@ -45,6 +52,9 @@ class Parser(object):
     namespace.update(vars(new_args))
     return namespace
 
+  def format_help(self):
+    return self._help_argparser.format_help()
+
   def register(self, *args, **kwargs):
     """Register an option, using argparse params."""
     if self._locked:
@@ -54,6 +64,13 @@ class Parser(object):
     if self._parent_parser:
       self._parent_parser._lock()
     dest = self._set_dest(args, kwargs)
+
+    # For help formatting we register only in this scope.
+    raw_default = self._compute_default(dest, kwargs).value
+    kwargs_with_default = dict(kwargs, default=raw_default)
+    self._help_argparser.add_argument(*args, **kwargs_with_default)
+
+    # For parsing we register on this and all enclosed scopes.
     self._register(dest, args, kwargs)
 
   def register_boolean(self, *args, **kwargs):
@@ -70,17 +87,26 @@ class Parser(object):
       self._parent_parser._lock()
     dest = self._set_dest(args, kwargs)
 
-    action = kwargs.get('action')
-    if action not in ('store_false', 'store_true'):
-      raise RegistrationError('Invalid action for boolean flag: %s' % action)
-    inverse_action = 'store_true' if action == 'store_false' else 'store_false'
-
     inverse_args = []
+    help_args = []
     for flag in args:
       if flag.startswith('--') and not flag.startswith('--no-'):
         inverse_args.append('--no-' + flag[2:])
+        help_args.append('--[no-]%s' % flag[2:])
+      else:
+        help_args.append(flag)
 
+    # For help formatting we register only in this scope.
+    raw_default = self._compute_default(dest, kwargs).value
+    kwargs_with_default = dict(kwargs, default=raw_default)
+    self._help_argparser.add_argument(*help_args, **kwargs_with_default)
+
+    # For parsing we register the flag, and its inverse, on this and all enclosed scopes.
     if inverse_args:
+      action = kwargs.get('action')
+      if action not in ('store_false', 'store_true'):
+        raise RegistrationError('Invalid action for boolean flag: %s' % action)
+      inverse_action = 'store_true' if action == 'store_false' else 'store_false'
       inverse_kwargs = copy.copy(kwargs)
       inverse_kwargs['action'] = inverse_action
       self._register_boolean(dest, args, kwargs, inverse_args, inverse_kwargs)

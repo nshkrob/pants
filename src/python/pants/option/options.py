@@ -62,14 +62,9 @@ class Options(object):
   def __init__(self, env, config, known_scopes, args=sys.argv):
     splitter = ArgSplitter(known_scopes)
     self._scope_to_flags, self._target_specs = splitter.split_args(args)
-    self._help = splitter.help
+    self._is_help = splitter.is_help
     self._parser_hierarchy = ParserHierarchy(env, config, known_scopes)
     self._values_by_scope = {}  # Arg values, parsed per-scope on demand.
-
-  @property
-  def help(self):
-    """Whether the command line indicates a request for help."""
-    return self._help
 
   @property
   def target_specs(self):
@@ -81,9 +76,16 @@ class Options(object):
     """The requested goals."""
     return set([g for g in self._scope_to_flags.keys() if g and not '.' in g])
 
-  def get_global_parser(self):
-    """Returns the parser for the given scope, so code can register on it directly."""
-    return self.get_parser('')
+  @property
+  def is_help(self):
+    """Whether the command line indicates a request for help."""
+    return self._is_help
+
+  def format_global_help(self):
+    return self.get_global_parser().format_help()
+
+  def format_help(self, scope):
+    return self.get_parser(scope).format_help()
 
   def register_global(self, *args, **kwargs):
     """Register an option in the global scope, using argparse params."""
@@ -95,6 +97,10 @@ class Options(object):
     An inverse option will be automatically created. E.g., --foo will have a companion --no-foo.
     """
     self.register_boolean('', *args, **kwargs)
+
+  def get_global_parser(self):
+    """Returns the parser for the given scope, so code can register on it directly."""
+    return self.get_parser('')
 
   def get_parser(self, scope):
     """Returns the parser for the given scope, so code can register on it directly."""

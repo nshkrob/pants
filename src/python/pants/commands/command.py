@@ -76,9 +76,13 @@ class Command(object):
     parser.error = error
     self.error = error
 
-    self.setup_parser(parser, args)
-    self.options, self.args = parser.parse_args(args)
-    self.parser = parser
+    # Horrible and temporary hack to not let the 'new' goal have complete control over
+    # command-line parsing. Note that import must be here, as New depends on this module.
+    from pants.commands.new import New
+    if not isinstance(self, New):
+      self.setup_parser(parser, args)
+      self.options, self.args = parser.parse_args(args)
+      self.parser = parser
 
   def setup_parser(self, parser, args):
     """Subclasses should override and confiure the OptionParser to reflect

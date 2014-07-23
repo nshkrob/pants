@@ -108,7 +108,7 @@ def _run():
   else:
     argv = sys.argv[1:]
   # Hack to force ./pants -h etc. to redirect to goal.
-  if argv[0] != 'goal' and set(['-h', '--help', 'help']).intersection(argv):
+  if argv[0] not in ('goal', 'new') and set(['-h', '--help', 'help']).intersection(argv):
     argv = ['goal'] + argv
 
   parser = optparse.OptionParser(add_help_option=False, version=version)

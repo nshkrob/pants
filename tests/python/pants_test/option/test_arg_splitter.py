@@ -24,7 +24,7 @@ class ArgSplitterTest(unittest.TestCase):
     scope_to_flags, target_specs = splitter.split_args(args)
     self.assertEquals(expected_scope_to_flags, scope_to_flags)
     self.assertEquals(expected_target_specs, target_specs)
-    self.assertEquals(expected_help, splitter.help)
+    self.assertEquals(expected_help, splitter.is_help)
 
   def _error_split(self, args):
     parser = ArgSplitter(ArgSplitterTest._known_scopes)

@@ -25,11 +25,11 @@ class ArgSplitter(object):
   def __init__(self, known_scopes):
     self._known_scopes = set(known_scopes + ['help'])
     self._unconsumed_args = []  # In reverse order, for efficient popping off the end.
-    self._help = False  # True if the user asked for help.
+    self._is_help = False  # True if the user asked for help.
 
   @property
-  def help(self):
-    return self._help
+  def is_help(self):
+    return self._is_help
 
   def split_args(self, args=None):
     """Split the specified arg list (or sys.argv if unspecified).
@@ -75,7 +75,7 @@ class ArgSplitter(object):
       return None, []
     scope = self._unconsumed_args.pop()
     if scope.lower() == 'help':
-      self._help = True
+      self._is_help = True
     flags = self._consume_flags()
     return scope, flags
 
@@ -84,7 +84,7 @@ class ArgSplitter(object):
     while self._at_flag():
       flag = self._unconsumed_args.pop()
       if flag in ('-h', '--help'):
-        self._help = True
+        self._is_help = True
       else:
         flags.append(flag)
     return flags
