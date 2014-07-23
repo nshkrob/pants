@@ -17,13 +17,14 @@ from pants.option.arg_splitter import ArgSplitter, ArgSplitterError
 class ArgSplitterTest(unittest.TestCase):
   _known_scopes = ['compile', 'compile.java', 'compile.scala', 'test', 'test.junit']
 
-  def _split(self, args, expected_scope_to_flags, expected_target_specs):
-    parser = ArgSplitter(ArgSplitterTest._known_scopes)
+  def _split(self, args, expected_scope_to_flags, expected_target_specs, expected_help=False):
+    splitter = ArgSplitter(ArgSplitterTest._known_scopes)
     if isinstance(args, Compatibility.string):
       args = shlex.split(str(args))
-    scope_to_flags, target_specs = parser.split_args(args)
+    scope_to_flags, target_specs = splitter.split_args(args)
     self.assertEquals(expected_scope_to_flags, scope_to_flags)
     self.assertEquals(expected_target_specs, target_specs)
+    self.assertEquals(expected_help, splitter.help)
 
   def _error_split(self, args):
     parser = ArgSplitter(ArgSplitterTest._known_scopes)
@@ -38,9 +39,9 @@ class ArgSplitterTest(unittest.TestCase):
     self._split('./pants goal', {'': []}, [])
     self._split('./pants -f', {'': ['-f']}, [])
     self._split('./pants goal -f', {'': ['-f']}, [])
-    self._split('./pants -f compile -g compile.java -h test.junit -i '
+    self._split('./pants -f compile -g compile.java -x test.junit -i '
                 'src/java/com/pants/foo src/java/com/pants/bar:baz',
-                {'': ['-f'], 'compile': ['-g'], 'compile.java': ['-h'], 'test.junit': ['-i']},
+                {'': ['-f'], 'compile': ['-g'], 'compile.java': ['-x'], 'test.junit': ['-i']},
                 ['src/java/com/pants/foo', 'src/java/com/pants/bar:baz'])
     self._split('./pants -farg --fff=arg compile --gg-gg=arg-arg -g test.junit --iii '
                 'src/java/com/pants/foo src/java/com/pants/bar:baz',
@@ -61,4 +62,14 @@ class ArgSplitterTest(unittest.TestCase):
     self._error_split('./pants compile -- -f')
     self._error_split('./pants compile -- foo/bar --flag')
 
-
+  def test_help_detection(self):
+    self._split('./pants help', {'': []}, [], True)
+    self._split('./pants goal help', {'': []}, [], True)
+    self._split('./pants -h', {'': []}, [], True)
+    self._split('./pants goal -h', {'': []}, [], True)
+    self._split('./pants --help', {'': []}, [], True)
+    self._split('./pants goal --help', {'': []}, [], True)
+    self._split('./pants help compile -x', {'': [], 'compile': ['-x']}, [], True)
+    self._split('./pants help compile -x', {'': [], 'compile': ['-x']}, [], True)
+    self._split('./pants compile -h', {'': [], 'compile': []}, [], True)
+    self._split('./pants compile --help test', {'': [], 'compile': [], 'test': []}, [], True)

@@ -19,10 +19,17 @@ class ArgSplitter(object):
 
   ./pants goal -x compile --foo compile.java -y target1 target2
   ./pants -x compile --foo compile.java -y -- target1 target2
+
+  Special-cases help flags.
   """
   def __init__(self, known_scopes):
-    self._known_scopes = known_scopes
+    self._known_scopes = set(known_scopes + ['help'])
     self._unconsumed_args = []  # In reverse order, for efficient popping off the end.
+    self._help = False  # True if the user asked for help.
+
+  @property
+  def help(self):
+    return self._help
 
   def split_args(self, args=None):
     """Split the specified arg list (or sys.argv if unspecified).
@@ -59,19 +66,27 @@ class ArgSplitter(object):
       targets.append(target)
       target = self._consume_target()
 
+    # We parse the word 'help' as a scope, but it's not a real one, so ignore it.
+    scope_to_flags.pop('help', None)
     return scope_to_flags, targets
 
   def _consume_scope(self):
     if not self._at_scope():
       return None, []
     scope = self._unconsumed_args.pop()
+    if scope.lower() == 'help':
+      self._help = True
     flags = self._consume_flags()
     return scope, flags
 
   def _consume_flags(self):
     flags = []
     while self._at_flag():
-      flags.append(self._unconsumed_args.pop())
+      flag = self._unconsumed_args.pop()
+      if flag in ('-h', '--help'):
+        self._help = True
+      else:
+        flags.append(flag)
     return flags
 
   def _consume_target(self):

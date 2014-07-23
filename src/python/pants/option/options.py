@@ -62,8 +62,14 @@ class Options(object):
   def __init__(self, env, config, known_scopes, args=sys.argv):
     splitter = ArgSplitter(known_scopes)
     self._scope_to_flags, self._target_specs = splitter.split_args(args)
+    self._help = splitter.help
     self._parser_hierarchy = ParserHierarchy(env, config, known_scopes)
     self._values_by_scope = {}  # Arg values, parsed per-scope on demand.
+
+  @property
+  def help(self):
+    """Whether the command line indicates a request for help."""
+    return self._help
 
   @property
   def target_specs(self):

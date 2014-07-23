@@ -5,11 +5,8 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
-from contextlib import contextmanager
-import inspect
 import os
 import sys
-import traceback
 
 from twitter.common import log
 from twitter.common.dirutil import safe_mkdir
@@ -32,7 +29,11 @@ StringIO = Compatibility.StringIO
 
 
 class New(Command):
-  """Lists installed goals or else executes a named goal."""
+  """Executes goals under the new options system.
+
+  Exists just to help with the transition to the new system, and possibly the
+  transition entirely off 'command'.
+  """
 
   class IntermixedArgumentsError(GoalError):
     pass
@@ -96,42 +97,13 @@ class New(Command):
           targets.append(self.build_graph.get_target(address))
     return targets
 
-  @contextmanager
-  def check_errors(self, banner):
-    errors = {}
-    def error(key, include_traceback=False):
-      exc_type, exc_value, _ = sys.exc_info()
-      msg = StringIO()
-      if include_traceback:
-        frame = inspect.trace()[-2]
-        filename = frame[1]
-        lineno = frame[2]
-        funcname = frame[3]
-        code = ''.join(frame[4]) if frame[4] else None
-        traceback.print_list([(filename, lineno, funcname, code)], file=msg)
-      if exc_type:
-        msg.write(''.join(traceback.format_exception_only(exc_type, exc_value)))
-      errors[key] = msg.getvalue()
-      sys.exc_clear()
-
-    yield error
-
-    if errors:
-      msg = StringIO()
-      msg.write(banner)
-      invalid_keys = [key for key, exc in errors.items() if not exc]
-      if invalid_keys:
-        msg.write('\n  %s' % '\n  '.join(invalid_keys))
-      for key, exc in errors.items():
-        if exc:
-          msg.write('\n  %s =>\n    %s' % (key, '\n      '.join(exc.splitlines())))
-      # The help message for goal is extremely verbose, and will obscure the
-      # actual error message, so we don't show it in this case.
-      self.error(msg.getvalue(), show_help=False)
-
   def run(self, lock):
     self.init()
     self.register_options()
+
+    if self.options.help:
+      print_help(goals)
+      sys.exit(0)
 
     phases = [Phase(goal) for goal in self.options.goals]
     targets = self.parse_target_specs()
