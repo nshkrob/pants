@@ -115,14 +115,14 @@ class JarRules(object):
   One issue is signed jars that must be included on the
   classpath.  These have a signature that depends on the jar contents and assembly of the deploy jar
   changes the content of the jar, breaking the signatures.  For cases like these the signed jars
-  must be verified and then the signature information thrown away.  The ``Skip`` rule supports this
-  sort of issue by allowing outright entry exclusion in the final deploy jar.
+  must be verified and then the signature information thrown away.  The :ref:`Skip <bdict_Skip>`
+  rule supports this sort of issue by allowing outright entry exclusion in the final deploy jar.
 
   Another issue is duplicate jar entries.  Although the underlying zip format supports these, the
   java jar tool and libraries do not.  As such some action must be taken for each duplicate entry
-  such that there are no duplicates in the final deploy jar.  The four ``Duplicate`` rules support
-  resolution of these cases by allowing 1st wins, last wins, concatenation of the duplicate entry
-  contents or raising an exception.
+  such that there are no duplicates in the final deploy jar.  The four
+  :ref:`Duplicate <bdict_Duplicate>` rules support resolution of these cases by allowing 1st wins,
+  last wins, concatenation of the duplicate entry contents or raising an exception.
   """
   @classmethod
   def skip_signatures_and_duplicates_concat_well_known_metadata(cls, default_dup_action=None,
@@ -234,8 +234,8 @@ class JvmBinary(JvmTarget):
       ``servlet.jar`` onto a Tomcat environment that provides another version,
       they might conflict. ``deploy_excludes`` gives you a way to build your
       code but exclude the conflicting ``jar`` when deploying.
-    :param deploy_jar_rules: Rules for packaging this binary in a deploy jar.
-    :type deploy_jar_rules: A JarRules specification.
+    :param deploy_jar_rules: :ref:`Jar rules <bdict_jar_rules>` for packaging this binary in a
+      deploy jar.
     :param configurations: Ivy configurations to resolve for this target.
       This parameter is not intended for general use.
     :type configurations: tuple of strings
@@ -303,12 +303,15 @@ class Bundle(object):
     ]
   """
 
-  def __init__(self, parse_context):
-    self._rel_path = parse_context.rel_path
-    self.filemap = {}
-    self.mapper = None
+  @classmethod
+  def factory(cls, parse_context):
+    """Return a factory method that can create bundles rooted at the parse context path."""
+    def bundle(**kwargs):
+      return Bundle(parse_context, **kwargs)
+    bundle.__doc__ = Bundle.__init__.__doc__
+    return bundle
 
-  def __call__(self, rel_path=None, mapper=None, relative_to=None):
+  def __init__(self, parse_context, rel_path=None, mapper=None, relative_to=None):
     """
     :param rel_path: Base path of the "source" file paths. By default, path of the
       BUILD file. Useful for assets that don't live in the source code repo.
@@ -321,7 +324,8 @@ class Bundle(object):
     if mapper and relative_to:
       raise ValueError("Must specify exactly one of 'mapper' or 'relative_to'")
 
-    self._rel_path = rel_path or self._rel_path
+    self._rel_path = rel_path or parse_context.rel_path
+    self.filemap = {}
 
     if relative_to:
       base = os.path.join(get_buildroot(), self._rel_path, relative_to)
@@ -330,8 +334,6 @@ class Bundle(object):
       self.mapper = RelativeToMapper(base)
     else:
       self.mapper = mapper or RelativeToMapper(os.path.join(get_buildroot(), self._rel_path))
-
-    return self
 
   @manual.builddict()
   def add(self, *filesets):

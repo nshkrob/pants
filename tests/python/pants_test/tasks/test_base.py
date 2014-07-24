@@ -7,6 +7,7 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
 
 import os
 import pytest
+import subprocess
 
 from contextlib import closing
 from optparse import OptionGroup, OptionParser
@@ -78,6 +79,11 @@ def prepare_task(task_type,
     # Nope, it's a task that hasn't been ported yet.
     task = task_type(context, workdir, **kwargs)
   return task
+
+
+def is_exe(name):
+  result = subprocess.call(['which', name], stdout=open(os.devnull, 'w'), stderr=subprocess.STDOUT)
+  return result == 0
 
 
 class TaskTest(BaseTest):
