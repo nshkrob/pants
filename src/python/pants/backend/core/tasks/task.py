@@ -59,13 +59,15 @@ class TaskBase(AbstractClass):
     """
 
   @classmethod
-  def register_options(cls, parser):
+  def register_options(cls, registry):
     """Register any options for this task, using argparse params."""
     pass
 
-  def __init__(self, context, workdir):
+  # TODO(benjy): Remove the default for the options argument, once all subclasses have been ported.
+  def __init__(self, context, workdir, options=None):
     self.context = context
     self._workdir = workdir
+    self._new_options = options
     self._cache_key_generator = CacheKeyGenerator(
         context.config.getdefault('cache_key_gen_version', default=None))
     self._read_artifact_cache_spec = None
@@ -92,6 +94,11 @@ class TaskBase(AbstractClass):
   @property
   def workdir(self):
     return self._workdir
+
+  @property
+  def options(self):
+    """The (new-style) options for this task's scope."""
+    return self._new_options
 
   def setup_artifact_cache_from_config(self, config_section=None):
     """Subclasses can call this in their __init__() to set up artifact caching for that task type.

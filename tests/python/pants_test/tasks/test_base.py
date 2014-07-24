@@ -14,11 +14,12 @@ from StringIO import StringIO
 
 from twitter.common.collections import maybe_list
 
+from pants.backend.core.tasks.task import Task
+from pants.backend.core.tasks.console_task import ConsoleTask
 from pants.base.cmd_line_spec_parser import CmdLineSpecParser
 from pants.base.target import Target
 from pants.goal import Context, Mkflag
-from pants.backend.core.tasks.task import Task
-from pants.backend.core.tasks.console_task import ConsoleTask
+from pants.option.options import Options
 from pants_test.base_test import BaseTest
 from pants_test.base.context_utils import create_config, create_run_tracker
 
@@ -46,21 +47,37 @@ def prepare_task(task_type,
   config = create_config(config or '')
   workdir = os.path.join(config.getdefault('pants_workdir'), 'test', task_type.__name__)
 
-  parser = OptionParser()
-  option_group = OptionGroup(parser, 'test')
-  mkflag = Mkflag('test')
-  task_type.setup_parser(option_group, args, mkflag)
-  options, _ = parser.parse_args(args or [])
+  env = {}
+  options = None
+  new_options = None
+  try:
+    # See if these args match the new-style options registered by the task in its register_options.
+    new_options = Options(env, config, ['test_task_scope'], args or [])
+    task_type.register_options(new_options.get_parser('test_task_scope'))
+  except Exception:
+    # Nope, these must match the old-style options registered by the task in its setup_parser.
+    parser = OptionParser()
+    option_group = OptionGroup(parser, 'test')
+    mkflag = Mkflag('test')
+    task_type.setup_parser(option_group, args, mkflag)
+    options, _ = parser.parse_args(args or [])
 
   run_tracker = create_run_tracker()
 
   context = Context(config,
                     options,
+                    new_options,
                     run_tracker,
                     targets or [],
                     build_graph=build_graph,
                     build_file_parser=build_file_parser)
-  return task_type(context, workdir, **kwargs)
+  try:
+    # See if this task takes new_style args in its ctor.
+    task = task_type(context, workdir, options=new_options.get_parser('test_task_scope'), **kwargs)
+  except TypeError:
+    # Nope, it's a task that hasn't been ported yet.
+    task = task_type(context, workdir, **kwargs)
+  return task
 
 
 class TaskTest(BaseTest):

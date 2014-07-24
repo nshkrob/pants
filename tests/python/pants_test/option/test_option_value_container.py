@@ -5,6 +5,7 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
+import copy
 import unittest
 
 from pants.option.option_value_container import OptionValueContainer
@@ -40,3 +41,23 @@ class OptionValueContainerTest(unittest.TestCase):
     self.assertEqual(33, o.foo)
     o.bar = 44  # No explicit rank is assumed to be a FLAG.
     self.assertEqual(44, o.foo)
+
+  def test_copy(self):
+    # copy semantics can get hairy when overriding __setattr__/__getattr__, so we test them.
+    o = OptionValueContainer()
+    o.add_forwardings({'foo': 'bar'})
+    o.bar = 1
+    p = copy.copy(o)
+    self.assertEqual(1, p.foo)
+
+  def test_deepcopy(self):
+    # deepcopy semantics can get hairy when overriding __setattr__/__getattr__, so we test them.
+    o = OptionValueContainer()
+    o.add_forwardings({'foo': 'bar'})
+    o.add_forwardings({'baz': 'qux'})
+    o.bar = 1
+    o.qux = { 'a': 111 }
+    p = copy.deepcopy(o)
+    o.baz['b'] = 222  # Add to original dict.
+    self.assertEqual(1, p.foo)
+    self.assertEqual({ 'a': 111 }, p.baz)  # Ensure dict was copied.

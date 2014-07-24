@@ -5,7 +5,7 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
-from pants.option.parser_hierarchy import RankedValue
+from pants.option.ranked_value import RankedValue
 
 
 class OptionValueContainer(object):
@@ -64,6 +64,9 @@ class OptionValueContainer(object):
       setattr(self, k, v)
 
   def __setattr__(self, key, value):
+    if key == '_forwardings':
+      return super(OptionValueContainer, self).__setattr__(key, value)
+
     if hasattr(self, key):
       existing_value = getattr(self, key)
       if isinstance(existing_value, RankedValue):
@@ -88,10 +91,17 @@ class OptionValueContainer(object):
   def __getattr__(self, key):
     # Note: Called only if regular attribute lookup fails, so accesses
     # to non-forwarded attributes will be handled the normal way.
-    if key not in self._forwardings:
-      raise AttributeError('No such forwarded attribute: %s' % key)
-    val = getattr(self, self._forwardings[key])
-    if isinstance(val, RankedValue):
-      return val.value
-    else:
-      return val
+
+    # In case we get called in copy/deepcopy, which don't invoke the ctor.
+    if key == '_forwardings':
+      raise AttributeError
+    try:
+      if key not in self._forwardings:
+        raise AttributeError('No such forwarded attribute: %s' % key)
+      val = getattr(self, self._forwardings[key])
+      if isinstance(val, RankedValue):
+        return val.value
+      else:
+        return val
+    except RuntimeError as e:
+      raise

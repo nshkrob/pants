@@ -7,5 +7,7 @@ python_library(
   sources = globs('*.py'),
   dependencies = [
     pants('3rdparty/python:argparse'),
+    pants('src/python/pants/base:build_environment'),
+    pants('src/python/pants/goal')
   ]
 )

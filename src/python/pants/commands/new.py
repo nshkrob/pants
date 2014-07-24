@@ -66,7 +66,7 @@ class New(Command):
   def __init__(self, *args, **kwargs):
     super(New, self).__init__(*args, **kwargs)
     self.config = None
-    self.options = None
+    self.options = None  # A pants.option.Options instance.
 
   def init(self):
     known_scopes = ['']
@@ -77,7 +77,7 @@ class New(Command):
 
     self.config = Config.load()
     self.options = Options(env=os.environ, config=self.config,
-                           known_scopes=known_scopes, args=sys.argv)
+                           known_scopes=known_scopes, args=sys.argv, legacy=None)
 
   def register_options(self):
     self.register_global_options(self.options.get_global_parser())
@@ -133,6 +133,7 @@ class New(Command):
 
     context = Context(
       self.config,
+      None,
       self.options,
       self.run_tracker,
       targets,

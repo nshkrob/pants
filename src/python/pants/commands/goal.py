@@ -33,6 +33,7 @@ from pants.goal import Context, GoalError, Phase
 from pants.goal.help import print_help
 from pants.goal.initialize_reporting import update_reporting
 from pants.goal.option_helpers import add_global_options
+from pants.option.options import Options
 from pants.util.dirutil import safe_mkdir
 
 
@@ -238,9 +239,26 @@ class Goal(Command):
     update_reporting(self.options, is_console_task() or is_explain, self.run_tracker,
                      self.options.logdir)
 
+    # Create a dummy new-style Options instance that simply proxies to old-style options.
+    # This allows us to gradually transition task code to read from the new Options
+    # instance, without imposing change on users (yet).
+    known_scopes = ['']
+    for phase, goals in Phase.all():
+      known_scopes.append(phase.name)
+      for goal in goals:
+        known_scopes.append('%s.%s' % (phase.name, goal.name))
+    new_options = Options(env=None, config=None, known_scopes=known_scopes, args=[],
+                          legacy=self.options)
+
+    for phase, goals in Phase.all():
+      phase.register_options(new_options.get_parser(phase.name))
+      for goal in goals:
+        goal.task_type.register_options(new_options.get_parser('%s.%s' % (phase.name, goal.name)))
+
     context = Context(
       self.config,
       self.options,
+      new_options,
       self.run_tracker,
       self.targets,
       requested_goals=self.requested_goals,

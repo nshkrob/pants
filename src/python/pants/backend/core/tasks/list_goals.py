@@ -11,6 +11,16 @@ from pants.backend.core.tasks.console_task import ConsoleTask
 
 class ListGoals(ConsoleTask):
   @classmethod
+  def register_options(cls, registry):
+    super(ListGoals, cls).register_options(registry)
+    registry.register_boolean('--all', default=False, action='store_true',
+                              help='List all goals even if no description is available.',
+                              legacy='goal_list_all')
+    registry.register_boolean('--graph', default=False, action='store_true',
+                              help='Generate a graphviz graph of installed goals.',
+                              legacy='goal_list_graph')
+
+  @classmethod
   def setup_parser(cls, option_group, args, mkflag):
     super(ListGoals, cls).setup_parser(option_group, args, mkflag)
     option_group.add_option(mkflag("all"),
@@ -33,7 +43,7 @@ class ListGoals(ConsoleTask):
         if phase.description:
           documented_rows.append((phase.name, phase.description))
           max_width = max(max_width, len(phase.name))
-        elif self.context.options.goal_list_all:
+        elif self.options.all:
           undocumented.append(phase.name)
       for name, description in documented_rows:
         yield '  %s: %s' % (name.rjust(max_width), description)
@@ -85,4 +95,4 @@ class ListGoals(ConsoleTask):
             edges.add(edge)
       yield '}'
 
-    return graph() if self.context.options.goal_list_graph else report()
+    return graph() if self.options.graph else report()

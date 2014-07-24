@@ -18,19 +18,39 @@ from pants.reporting.report import Report
 from pants.util.dirutil import safe_mkdtemp
 
 
+class FakeOptions(object):
+  def __init__(self, opts):
+    self.__dict__ = opts
+
+
 def create_options(options_hash=None):
-  """Creates an options object populated with no options at all by default.
+  """Creates a fake options object populated with no options at all by default.
 
   :param dict options_hash: An optional dict of option values.
   """
   opts = options_hash or {}
   if not isinstance(opts, dict):
     raise ValueError('The given options_hash must be a dict, got: %s' % options_hash)
+  return FakeOptions(opts)
 
-  class Options(object):
-    def __init__(self):
-      self.__dict__ = opts
-  return Options()
+
+def create_new_options(options_hash=None):
+  """Creates a fake new-style options object populated with no options at all by default.
+
+  :param dict options_hash: An optional dict of scope -> dict of key->value.
+  """
+  opts = options_hash or {}
+  if not isinstance(opts, dict):
+    raise ValueError('The given options_hash must be a dict, got: %s' % options_hash)
+
+  class OptionsByScope(object):
+    def for_global_scope(self):
+      return self.for_scope('')
+
+    def for_scope(self, scope):
+      return FakeOptions(options_hash.get(scope, {}))
+
+  return OptionsByScope()
 
 
 def create_config(sample_ini='', defaults=None):
@@ -70,16 +90,19 @@ def create_run_tracker(info_dir=None):
   return run_tracker
 
 
-def create_context(config='', options=None, target_roots=None, **kwargs):
+def create_context(config='', options=None, new_options=None, target_roots=None, **kwargs):
   """Creates a ``Context`` with no config values, options, or targets by default.
 
   :param config: Either a ``Context`` object or else a string representing the contents of the
     pants.ini to parse the config from.
-  :param options: An optional dict of of option values.
+  :param options: An optional dict of option values.
+  :param new_options: An optional dict of scope -> dict of option values.
   :param target_roots: An optional list of target roots to seed the context target graph from.
   :param ``**kwargs``: Any additional keyword arguments to pass through to the Context constructor.
   """
   config = config if isinstance(config, Config) else create_config(config)
+  opts = create_options(options or {})
+  new_opts = create_new_options(new_options or {})
   run_tracker = create_run_tracker()
   target_roots = maybe_list(target_roots, Target) if target_roots else []
-  return Context(config, create_options(options or {}), run_tracker, target_roots, **kwargs)
+  return Context(config, opts, new_opts, run_tracker, target_roots, **kwargs)

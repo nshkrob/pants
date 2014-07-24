@@ -76,7 +76,8 @@ class Phase(PhaseBase):
       do_setup_parser(phase, setup)
 
   @classmethod
-  def register_options(cls, parser):
+  def register_options(cls, registry):
+    """Register any options for this phase, using argparse params."""
     pass
 
   @staticmethod

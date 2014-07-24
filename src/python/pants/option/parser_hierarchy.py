@@ -124,11 +124,10 @@ class Parser(object):
   def _register_boolean(self, dest, args, kwargs, inverse_args, inverse_kwargs):
     group = self._argparser.add_mutually_exclusive_group()
     ranked_default = self._compute_default(dest, kwargs)
-    inverse_ranked_default = RankedValue(ranked_default.rank, not ranked_default.value)
     kwargs_with_default = dict(kwargs, default=ranked_default)
-    inverse_kwargs_with_default = dict(inverse_kwargs, default=inverse_ranked_default)
+    inverse_kwargs.pop('default', None)
     group.add_argument(*args, **kwargs_with_default)
-    group.add_argument(*inverse_args, **inverse_kwargs_with_default)
+    group.add_argument(*inverse_args, **inverse_kwargs)
 
     # Propagate registration down to inner scopes.
     for child_parser in self._child_parsers:
@@ -142,6 +141,8 @@ class Parser(object):
     with two names (say -x, --xlong) and we only re-register one of them, say --xlong, in an
     inner scope. In this case we no longer want them to write to the same dest, so that
     we can use both (now with different meanings) in the inner scope.
+
+    Note: Modfies kwargs.
     """
     dest = self._infer_dest(args, kwargs)
     scoped_dest = '_%s_%s__' % (self._scope or 'DEFAULT', dest)
@@ -151,6 +152,11 @@ class Parser(object):
     # in the example above.
     for arg in args:
       self._dest_forwardings[arg.lstrip('-').replace('-', '_')] = scoped_dest
+
+    # Support for legacy flags.  Remove when the transition to new options is complete.
+    legacy = kwargs.pop('legacy', None)
+    self._dest_forwardings[scoped_dest] = legacy
+
     return dest
 
   def _infer_dest(self, args, kwargs):
@@ -168,9 +174,9 @@ class Parser(object):
     env_var = 'PANTS_%s_%s' % (config_section.upper().replace('.', '_'), dest.upper())
 
     value_type = kwargs.get('type', str)
-    env_value_str = self._env.get(env_var)
+    env_value_str = self._env.get(env_var) if self._env else None
     env_value = None if env_value_str is None else value_type(env_value_str)
-    config_value = self._config.get(config_section, dest, default=None)
+    config_value = self._config.get(config_section, dest, default=None) if self._config else None
     hardcoded_value = kwargs.get('default')
 
     if env_value is not None:

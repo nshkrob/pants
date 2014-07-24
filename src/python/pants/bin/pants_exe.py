@@ -93,7 +93,6 @@ def _run():
   [main]
   roots: ['src/python/pants_internal/test/',]
   """
-
   logging.basicConfig()
   version = pants_version()
   if len(sys.argv) == 2 and sys.argv[1] == _VERSION_OPTION:

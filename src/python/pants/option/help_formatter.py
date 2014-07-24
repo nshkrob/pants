@@ -50,7 +50,7 @@ def new_print_help(options):
         print('\nUnknown goal: %s' % goal)
       else:
         print('\n%s options:' % goal)
-        options.format_help(goal)
+        options.format_help('%s.%s' % (phase.name, goal))
   else:
     print(pants_release())
     print('\nUsage:')

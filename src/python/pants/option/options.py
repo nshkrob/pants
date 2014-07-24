@@ -59,11 +59,12 @@ class Options(object):
     - The hard-coded value provided at registration time.
     - None.
   """
-  def __init__(self, env, config, known_scopes, args=sys.argv):
+  def __init__(self, env, config, known_scopes, args=sys.argv, legacy=None):
     splitter = ArgSplitter(known_scopes)
     self._scope_to_flags, self._target_specs = splitter.split_args(args)
     self._is_help = splitter.is_help
     self._parser_hierarchy = ParserHierarchy(env, config, known_scopes)
+    self._legacy = legacy  # Old-style options, used temporarily during transition.
     self._values_by_scope = {}  # Arg values, parsed per-scope on demand.
 
   @property
@@ -138,8 +139,10 @@ class Options(object):
     # First get enclosing scope's option values, if any.
     if scope == '':
       values = OptionValueContainer()
+      if self._legacy:
+        values.update(vars(self._legacy))
     else:
-      values = copy.deepcopy(self.for_scope(scope.rpartition('.')[0]))
+      values = copy.copy(self.for_scope(scope.rpartition('.')[0]))
 
     # Now add our values.
     flags_in_scope = self._scope_to_flags.get(scope, [])

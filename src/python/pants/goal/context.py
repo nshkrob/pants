@@ -66,10 +66,11 @@ class Context(object):
     def fatal(self, *msg_elements):
       self._run_tracker.log(Report.FATAL, *msg_elements)
 
-  def __init__(self, config, options, run_tracker, target_roots, requested_goals=None,
+  def __init__(self, config, options, new_options, run_tracker, target_roots, requested_goals=None,
                lock=None, log=None, target_base=None, build_graph=None, build_file_parser=None):
     self._config = config
     self._options = options
+    self._new_options = new_options  # a pants.option.Options instance.
     self.build_graph = build_graph
     self.build_file_parser = build_file_parser
     self.run_tracker = run_tracker
@@ -93,6 +94,11 @@ class Context(object):
   def options(self):
     """Returns the command line options parsed at startup."""
     return self._options
+
+  @property
+  def new_options(self):
+    """Returns the new-style command line options parsed at startup."""
+    return self._new_options
 
   @property
   def lock(self):

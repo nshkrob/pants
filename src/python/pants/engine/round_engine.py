@@ -117,7 +117,16 @@ class RoundEngine(Engine):
       task_workdir = os.path.join(context.config.getdefault('pants_workdir'),
                                   phase.name,
                                   goal.name)
-      task = task_type(context, task_workdir)
+      scope = '%s.%s' % (phase.name, goal.name)
+      new_options = context.new_options.for_scope(scope) if context.new_options else None
+
+      # Temporary hack while tasks are being ported to accept new-style options.
+      try:
+        # Does this task take new-style options?
+        task = task_type(context, task_workdir, options=new_options)
+      except TypeError:
+        # No, it hasn't been ported yet.
+        task = task_type(context, task_workdir)
       tasks_by_name[goal.name] = task
 
       round_manager = RoundManager(context)

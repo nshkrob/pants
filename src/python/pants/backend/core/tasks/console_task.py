@@ -14,14 +14,19 @@ from pants.backend.core.tasks.task import Task
 
 class ConsoleTask(Task):
   @classmethod
+  def register_options(cls, registry):
+    registry.register('--sep', default='\\n', metavar='<separator>',
+                      help='String used to separate results.',
+                      legacy='console_%s_separator' % cls.__name__)
+
+  @classmethod
   def setup_parser(cls, option_group, args, mkflag):
     option_group.add_option(mkflag("sep"), dest="console_%s_separator" % cls.__name__,
                             default='\\n', help="String to use to separate results.")
 
-  def __init__(self, context, workdir, outstream=sys.stdout):
-    super(ConsoleTask, self).__init__(context, workdir)
-    separator_option = "console_%s_separator" % self.__class__.__name__
-    self._console_separator = getattr(context.options, separator_option).decode('string-escape')
+  def __init__(self, context, workdir, options=None, outstream=sys.stdout):
+    super(ConsoleTask, self).__init__(context, workdir, options)
+    self._console_separator = self.options.sep.decode('string-escape')
     self._outstream = outstream
 
   @contextmanager
