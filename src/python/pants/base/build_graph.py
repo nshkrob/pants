@@ -173,9 +173,9 @@ class BuildGraph(object):
     return ret
 
   def transitive_subgraph_of_addresses(self, addresses, predicate=None):
-    ret = set()
-    self.walk_transitive_dependency_graph(addresses, ret.add, predicate=predicate)
-    return ret
+    target_set = set()
+    self.walk_transitive_dependency_graph(addresses, target_set.add, predicate=predicate)
+    return target_set
 
   def inject_synthetic_target(self,
                               address,

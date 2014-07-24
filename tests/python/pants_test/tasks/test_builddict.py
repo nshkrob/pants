@@ -14,7 +14,7 @@ from pants.base.build_file_parser import BuildFileParser
 from pants_test.tasks.test_base import TaskTest, prepare_task
 
 
-OUTDIR = "/tmp/dist"
+OUTDIR = "/tmp/dist1"
 
 sample_ini_test_1 = """
 [DEFAULT]
