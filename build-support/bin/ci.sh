@@ -59,6 +59,17 @@ if [[ "${skip_bootstrap:-false}" == "false" ]]; then
   ) || die "Failed to bootstrap pants."
 fi
 
+# We don't allow code in our __init.py__ files. Reject changes that allow
+# this to creep back in.
+R=`find src -name __init__.py -exec wc -l {} \; |grep -v 0`
+if [ ! -z "${R}" ]; then
+  echo "ERROR: All '__init__.py' files should be empty, but the following contain code:"
+  echo "$R" | awk '{print $2}'
+  exit 1
+fi
+exit 0
+
+# Sanity checks
 ./pants.pex goal clean-all || die "Failed to clean-all."
 ./pants.pex goal goals || die "Failed to list goals."
 ./pants.pex goal list :: || die "Failed to list all targets."
