@@ -75,8 +75,10 @@ class Options(object):
     return self._target_specs
 
   @property
-  def goals(self):
-    """The requested goals."""
+  def phases(self):
+    """The requested phases."""
+    # TODO: Order them in some way? We don't know anything about the topological
+    # order here, but it would be nice to, e.g., display help in that order.
     return set([g.partition('.')[0] for g in self._scope_to_flags.keys() if g])
 
   @property
@@ -157,14 +159,23 @@ class Options(object):
       sys.exit(1)
 
   def print_help(self, msg=None):
-    if self.goals:
-      for goal in self.goals:
-        phase = Phase(goal)
+    """Print a help screen, followed by an optional message.
+
+    Note: Ony useful if called after options have been registered.
+    """
+    if self.phases:
+      for phase_name in self.phases:
+        phase = Phase(phase_name)
         if not phase.goals():
-          print('\nUnknown goal: %s' % goal)
+          print('\nUnknown goal: %s' % phase_name)
         else:
-          print('\n%s options:' % goal)
-          self.format_help('%s.%s' % (phase.name, goal))
+          print('\n%s options:' % phase.name)
+          print(self.format_help('%s' % phase.name))
+          for goal in phase.goals():
+            if goal.name != phase.name:  # Otherwise we registered on the phase scope.
+              scope = '%s.%s' % (phase.name, goal.name)
+              print('\n%s options:' % scope)
+              print(self.format_help(scope))
     else:
       print(pants_release())
       print('\nUsage:')

@@ -97,7 +97,8 @@ class New(Command):
       for goal in same_named_goals:
         goal.task_type.register_options(self.options.get_parser(phase.name))
       for goal in other_goals:
-        goal.task_type.register_options(self.options.get_parser('%s.%s' % (phase.name, goal.name)))
+        goal_scope = '%s.%s' % (phase.name, goal.name)
+        goal.task_type.register_options(self.options.get_parser(goal_scope))
 
   def parse_target_specs(self):
     targets = []
@@ -119,7 +120,7 @@ class New(Command):
       self.options.print_help()
       sys.exit(0)
 
-    phases = [Phase(goal) for goal in self.options.goals]
+    phases = [Phase(goal) for goal in self.options.phases]
     targets = self.parse_target_specs()
     global_options = self.options.for_global_scope()
 
@@ -150,7 +151,7 @@ class New(Command):
       self.options,
       self.run_tracker,
       targets,
-      requested_goals=self.options.goals,
+      requested_goals=self.options.phases,
       build_graph=self.build_graph,
       build_file_parser=self.build_file_parser,
       lock=lock)
