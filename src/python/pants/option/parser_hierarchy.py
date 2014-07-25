@@ -15,6 +15,15 @@ from pants.option.ranked_value import RankedValue
 class RegistrationError(Exception):
   pass
 
+class ParseError(Exception):
+  pass
+
+
+# Standard ArgumentParser prints usage and exists on error. We subclass so we can raise instead.
+class CustomArgumentParser(ArgumentParser):
+  def error(self, message):
+    raise ParseError(message)
+
 
 class Parser(object):
   """A parser in a scoped hierarchy.
@@ -33,11 +42,11 @@ class Parser(object):
     self._scope = scope
     self._locked = False  # If True, no more registration is allowed on this parser.
     # The argparser we use for actually parsing args.
-    self._argparser = ArgumentParser(conflict_handler='resolve')
+    self._argparser = CustomArgumentParser(conflict_handler='resolve')
 
     # The argparser we use for formatting help messages.
-    self._help_argparser = ArgumentParser(conflict_handler='resolve',
-                                          formatter_class=PantsHelpFormatter)
+    self._help_argparser = CustomArgumentParser(conflict_handler='resolve',
+                                                formatter_class=PantsHelpFormatter)
 
     self._dest_forwardings = {}  # arg to dest.
     self._parent_parser = parent_parser  # A Parser instance, or None for the global scope parser.

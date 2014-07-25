@@ -22,7 +22,6 @@ from pants.commands.command import Command
 from pants.engine.round_engine import RoundEngine
 from pants.goal import Context, GoalError, Phase
 from pants.goal.initialize_reporting import update_reporting
-from pants.option.help_formatter import new_print_help
 from pants.option.options import Options
 
 
@@ -117,7 +116,7 @@ class New(Command):
     self.register_options()
 
     if self.options.is_help:
-      new_print_help(self.options)
+      self.options.print_help()
       sys.exit(0)
 
     phases = [Phase(goal) for goal in self.options.goals]

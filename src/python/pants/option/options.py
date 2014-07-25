@@ -8,9 +8,11 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
 import copy
 import sys
 
+from pants.base.build_environment import pants_release
+from pants.goal import Phase
 from pants.option.arg_splitter import ArgSplitter
 from pants.option.option_value_container import OptionValueContainer
-from pants.option.parser_hierarchy import ParserHierarchy
+from pants.option.parser_hierarchy import ParseError, ParserHierarchy
 
 
 class OptionError(Exception):
@@ -145,7 +147,41 @@ class Options(object):
       values = copy.copy(self.for_scope(scope.rpartition('.')[0]))
 
     # Now add our values.
-    flags_in_scope = self._scope_to_flags.get(scope, [])
-    self._parser_hierarchy.get_parser_by_scope(scope).parse_args(flags_in_scope, values)
-    self._values_by_scope[scope] = values
-    return values
+    try:
+      flags_in_scope = self._scope_to_flags.get(scope, [])
+      self._parser_hierarchy.get_parser_by_scope(scope).parse_args(flags_in_scope, values)
+      self._values_by_scope[scope] = values
+      return values
+    except ParseError as e:
+      self.print_help(str(e))
+      sys.exit(1)
+
+  def print_help(self, msg=None):
+    if self.goals:
+      for goal in self.goals:
+        phase = Phase(goal)
+        if not phase.goals():
+          print('\nUnknown goal: %s' % goal)
+        else:
+          print('\n%s options:' % goal)
+          self.format_help('%s.%s' % (phase.name, goal))
+    else:
+      print(pants_release())
+      print('\nUsage:')
+      print('  ./pants new [option ...] [goal ...] [target...]  Attempt the specified goals.')
+      print('  ./pants new help                                 Get help.')
+      print('  ./pants new help [goal]                          Get help for the specified goal.')
+      print('  ./pants new goals                                List all installed goals.')
+      print('')
+      print('  [target] accepts two special forms:')
+      print('    dir:  to include all targets in the specified directory.')
+      print('    dir:: to include all targets found recursively under the directory.')
+
+      print('\nFriendly docs:\n  http://pantsbuild.github.io/')
+
+      print('\nGlobal options:')
+      print(self.format_global_help())
+
+    if msg is not None:
+      print(msg)
+

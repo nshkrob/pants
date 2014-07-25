@@ -7,9 +7,6 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
 
 import argparse
 
-from pants.base.build_environment import pants_release
-from pants.goal import Phase
-
 
 class PantsHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
   def add_usage(self, usage, actions, groups, prefix=None):
@@ -40,30 +37,3 @@ class PantsHelpFormatter(argparse.ArgumentDefaultsHelpFormatter):
 
       # add the item to the list
       self._add_item(self._format_action, [action])
-
-
-def new_print_help(options):
-  if options.goals:
-    for goal in options.goals:
-      phase = Phase(goal)
-      if not phase.goals():
-        print('\nUnknown goal: %s' % goal)
-      else:
-        print('\n%s options:' % goal)
-        options.format_help('%s.%s' % (phase.name, goal))
-  else:
-    print(pants_release())
-    print('\nUsage:')
-    print('  ./pants new [option ...] [goal ...] [target...]  Attempt the specified goals.')
-    print('  ./pants new help                                 Get help.')
-    print('  ./pants new help [goal]                          Get help for the specified goal.')
-    print('  ./pants new goals                                List all installed goals.')
-    print('')
-    print('  [target] accepts two special forms:')
-    print('    dir:  to include all targets in the specified directory.')
-    print('    dir:: to include all targets found recursively under the directory.')
-
-    print('\nFriendly docs:\n  http://pantsbuild.github.io/')
-
-    print('\nGlobal options:')
-    print(options.format_global_help())
