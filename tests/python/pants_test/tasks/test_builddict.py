@@ -11,6 +11,7 @@ from StringIO import StringIO
 from pants.backend.core.tasks.builddictionary import BuildBuildDictionary, assemble
 from pants.base.build_configuration import BuildConfiguration
 from pants.base.build_file_parser import BuildFileParser
+from pants.util.dirutil import safe_rmtree
 from pants_test.tasks.test_base import TaskTest, prepare_task
 
 
@@ -23,11 +24,18 @@ outdir: %s
 
 
 class BaseBuildBuildDictionaryTest(TaskTest):
+
+  def setUp(self):
+    safe_rmtree(OUTDIR)
+
   def execute_task(self, config=sample_ini_test_1):
     with closing(StringIO()) as output:
       task = prepare_task(BuildBuildDictionary, config=config)
       task.execute()
       return output.getvalue()
+
+  def tearDown(self):
+    safe_rmtree(OUTDIR)
 
 
 class BuildBuildDictionaryTestEmpty(BaseBuildBuildDictionaryTest):
