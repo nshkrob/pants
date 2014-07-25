@@ -64,3 +64,6 @@ class IdeaIntegrationTest(PantsRunIntegrationTest):
 
   def test_idea_on_java_sources(self):
     self._idea_test(['src/scala/com/pants/testproject/javasources::'])
+
+  def test_idea_on_java_sources(self):
+     self._idea_test(['src/java/com/pants/testproject/thriftdeptest::'])

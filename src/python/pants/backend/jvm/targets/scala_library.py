@@ -85,8 +85,9 @@ class ScalaLibrary(ExportableJvmLibrary):
       yield target
 
   def closure(self):
+    super(ScalaLibrary, self).closure()
     # Overrides the default implementation to return java_sources as well
     target_set = super(ScalaLibrary, self).closure()
     for java_source_target in self.java_sources:
-      target_set.add(java_source_target)
+      target_set.update(java_source_target.closure())
     return target_set

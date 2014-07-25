@@ -10,6 +10,7 @@ import errno
 import os
 import re
 import subprocess
+import inspect
 
 from twitter.common import log
 from twitter.common.collections import OrderedSet

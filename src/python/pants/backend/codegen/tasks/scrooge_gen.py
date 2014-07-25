@@ -10,6 +10,7 @@ import hashlib
 import os
 import re
 import tempfile
+import inspect
 
 from twitter.common.collections import OrderedSet
 
@@ -283,7 +284,7 @@ class ScroogeGen(NailgunTask, JvmToolTaskMixin):
 
   def parse_gen_file_map(self, gen_file_map_path, outdir):
     d = defaultdict(set)
-    with open(gen_file_map_path, 'r') as deps:
+    with safe_open(gen_file_map_path, 'r') as deps:
       for dep in deps:
         src, cls = dep.strip().split('->')
         src = os.path.relpath(src.strip())
