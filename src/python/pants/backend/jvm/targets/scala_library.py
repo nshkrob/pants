@@ -83,3 +83,10 @@ class ScalaLibrary(ExportableJvmLibrary):
       if target is None:
         raise TargetDefinitionException(self, 'No such java target: %s' % spec)
       yield target
+
+  def closure(self):
+    # Overrides the default implementation to return java_sources as well
+    target_set = super(ScalaLibrary, self).closure()
+    for java_source in self.java_sources:
+      target_set.add(java_source)
+    return target_set
