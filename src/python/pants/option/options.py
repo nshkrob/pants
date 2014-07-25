@@ -75,7 +75,7 @@ class Options(object):
   @property
   def goals(self):
     """The requested goals."""
-    return set([g for g in self._scope_to_flags.keys() if g and not '.' in g])
+    return set([g.partition('.')[0] for g in self._scope_to_flags.keys() if g])
 
   @property
   def is_help(self):

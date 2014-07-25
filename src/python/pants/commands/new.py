@@ -83,7 +83,21 @@ class New(Command):
     self.register_global_options(self.options.get_global_parser())
     for phase, goals in Phase.all():
       phase.register_options(self.options.get_parser(phase.name))
+      # As a convenience, if a goal has the same name as its phase, we register its options
+      # directly on the phase. This way users can do ./pants foo --flag instead of
+      # ./pants foo.foo --flag.
+      same_named_goals = []
+      other_goals = []  # Should only contain 0 or 1 element.
       for goal in goals:
+        if goal.name == phase.name:
+          same_named_goals.append(goal)
+        else:
+          other_goals.append(goal)
+      # Must register these first, as the phase-level options will be locked once we
+      # register in any sub-scope.
+      for goal in same_named_goals:
+        goal.task_type.register_options(self.options.get_parser(phase.name))
+      for goal in other_goals:
         goal.task_type.register_options(self.options.get_parser('%s.%s' % (phase.name, goal.name)))
 
   def parse_target_specs(self):
