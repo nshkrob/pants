@@ -53,11 +53,13 @@ banner "CI BEGINS"
 if [[ "${skip_bootstrap:-false}" == "false" ]]; then
   banner "Bootstrapping pants"
   (
+    ./build-support/python/clean.sh && \
     PANTS_VERBOSE=1 PEX_VERBOSE=1 PYTHON_VERBOSE=1 ./pants;
     ./pants.pex goal goals
   ) || die "Failed to bootstrap pants."
 fi
 
+./pants.pex goal clean-all || die "Failed to clean-all."
 ./pants.pex goal goals || die "Failed to list goals."
 ./pants.pex goal list :: || die "Failed to list all targets."
 

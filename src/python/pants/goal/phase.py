@@ -7,8 +7,6 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
 
 from collections import defaultdict
 
-from twitter.common.collections import OrderedSet
-
 from pants.goal.error import GoalError
 
 
@@ -66,20 +64,12 @@ class Phase(PhaseBase):
     For that, you want setup_parser_for_help.
     """
     def do_setup_parser(phase, setup):
-      print('$$$$$$$$$$$$$$$$$$$$')
-      print('phase=%s, setup=%s' % (phase, setup))
       for goal in phase.goals():
-        print('phase=%s, goal=%s, setup=%s' % (phase, goal, setup))
         if goal not in setup:
-          print('adding goal [%s | %s | %s] to setup=[%s] because its not there' % (goal, goal.task_type, goal.__hash__(), setup))
-          for s in setup:
-            print('%s -> %s' % (s, s.__hash__()))
           setup.add(goal)
           for dep in goal.dependencies:
-            print('dep=%s, goal=%s, setup=%s' % (dep, goal, setup))
             do_setup_parser(dep, setup)
           goal.setup_parser(phase, parser, args)
-      print('$$$$$$$$$$$$$$$$$$$$')
 
     setup = set()
     for phase in phases:

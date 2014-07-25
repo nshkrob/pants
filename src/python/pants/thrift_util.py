@@ -103,5 +103,5 @@ def select_thrift_binary(config, version=None):
   version: An optional thrift compiler binary version override.
   """
   thrift_supportdir = config.get('thrift-gen', 'supportdir')
-  thrift_v = version or config.get('thrift-gen', 'version')
-  return BinaryUtil(config=config).select_binary(thrift_supportdir, thrift_v, 'thrift')
+  thrift_version = version or config.get('thrift-gen', 'version')
+  return BinaryUtil(config=config).select_binary(thrift_supportdir, thrift_version, 'thrift')
