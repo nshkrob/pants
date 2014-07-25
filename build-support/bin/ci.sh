@@ -67,7 +67,6 @@ if [ ! -z "${R}" ]; then
   echo "$R" | awk '{print $2}'
   exit 1
 fi
-exit 0
 
 # Sanity checks
 ./pants.pex goal clean-all || die "Failed to clean-all."
