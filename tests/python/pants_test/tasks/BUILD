@@ -97,6 +97,7 @@ python_tests(
     pants(':base'),
     pants('src/python/pants/backend/core/tasks:builddictionary'),
     pants('src/python/pants/goal:context'),
+    pants('src/python/pants/util:dirutil'),
   ]
 )
 
