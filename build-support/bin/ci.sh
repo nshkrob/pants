@@ -61,10 +61,10 @@ fi
 
 # We don't allow code in our __init.py__ files. Reject changes that allow
 # this to creep back in.
-R=`find src -name __init__.py -exec wc -l {} \; |grep -v 0`
+R=`find src tests -name __init__.py -not -empty|grep -v src/python/pants/__init__.py`
 if [ ! -z "${R}" ]; then
   echo "ERROR: All '__init__.py' files should be empty, but the following contain code:"
-  echo "$R" | awk '{print $2}'
+  echo "$R"
   exit 1
 fi
 
