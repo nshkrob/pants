@@ -124,12 +124,3 @@ class Goal(object):
     phase = Phase(phase or self.name)
     phase.install(self, first, replace, before, after)
     return phase
-
-  def __hash__(self):
-    return hash((self.name, self.task_type.__name__))
-
-  def __eq__(self, other):
-    return (other and
-      isinstance(other, Goal) and
-      self.name == other.name and
-      self.task_type.__name__ == other.task_type.__name__)
