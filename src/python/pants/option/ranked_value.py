@@ -46,6 +46,20 @@ class RankedValue(object):
   ENVIRONMENT = 3  # The value from the appropriately-named environment variable.
   FLAG = 4  # The value from the appropriately-named command-line flag.
 
+  @classmethod
+  def choose(cls, flag_val, env_val, config_val, hardcoded_val):
+    """Return the highest-ranked non-None value, wrapped in a RankedValue instance."""
+    if flag_val is not None:
+      return RankedValue(cls.FLAG, flag_val)
+    elif env_val is not None:
+      return RankedValue(cls.ENVIRONMENT, env_val)
+    elif config_val is not None:
+      return RankedValue(cls.CONFIG, config_val)
+    elif hardcoded_val is not None:
+      return RankedValue(cls.HARDCODED, hardcoded_val)
+    else:
+      return RankedValue(cls.NONE, None)
+
   def __init__(self, rank, value):
     self._rank = rank
     self._value = value

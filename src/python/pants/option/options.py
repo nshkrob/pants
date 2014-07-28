@@ -12,7 +12,8 @@ from pants.base.build_environment import pants_release
 from pants.goal import Phase
 from pants.option.arg_splitter import ArgSplitter
 from pants.option.option_value_container import OptionValueContainer
-from pants.option.parser_hierarchy import ParseError, ParserHierarchy
+from pants.option.parser import ParseError
+from pants.option.parser_hierarchy import ParserHierarchy
 
 
 class OptionError(Exception):
@@ -195,4 +196,3 @@ class Options(object):
 
     if msg is not None:
       print(msg)
-
