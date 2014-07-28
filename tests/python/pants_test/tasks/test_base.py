@@ -19,8 +19,9 @@ from pants.backend.core.tasks.task import Task
 from pants.backend.core.tasks.console_task import ConsoleTask
 from pants.base.cmd_line_spec_parser import CmdLineSpecParser
 from pants.base.target import Target
-from pants.goal import Context, Mkflag
 from pants.option.options import Options
+from pants.goal.context import Context
+from pants.goal.goal import Mkflag
 from pants_test.base_test import BaseTest
 from pants_test.base.context_utils import create_config, create_run_tracker
 

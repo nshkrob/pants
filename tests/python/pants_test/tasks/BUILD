@@ -38,6 +38,7 @@ python_test_suite(
     pants(':filemap'),
     pants(':filter'),
     pants(':group_task'),
+    pants(':ivy_utils'),
     pants(':jar_create'),
     pants(':jar_publish'),
     pants(':jar_task'),
@@ -285,6 +286,19 @@ python_tests(
 )
 
 python_tests(
+  name = 'ivy_utils',
+  sources = ['test_ivy_utils.py'],
+  dependencies = [
+    pants('src/python/pants/backend/core:plugin'),
+    pants('src/python/pants/backend/jvm:plugin'),
+    pants('src/python/pants/backend/jvm:ivy_utils'),
+    pants('src/python/pants/util:contextutil'),
+    pants('tests/python/pants_test:base_test'),
+    pants('tests/python/pants_test/base:context_utils'),
+  ]
+)
+
+python_tests(
   name = 'jar_create',
   sources = ['test_jar_create.py'],
   dependencies = [
@@ -324,6 +338,7 @@ python_tests(
   name = 'jar_publish_integration',
   sources = ['test_jar_publish_integration.py'],
   dependencies = [
+    pants(':base'),
     pants('src/python/pants/util:contextutil'),
     pants('tests/python/pants_test:int-test'),
   ],
@@ -517,8 +532,13 @@ python_tests(
   dependencies = [
     pants(':base'),
     pants('3rdparty/python:mock'),
-    pants('3rdparty/python/twitter/commons:twitter.common.contextutil'),
-    pants('src/python/pants/backend/codegen/tasks:ragel_gen'),
     pants('src/python/pants/backend/codegen/targets:java'),
+    pants('src/python/pants/backend/codegen/tasks:ragel_gen'),
+    pants('src/python/pants/base:address'),
+    pants('src/python/pants/base:build_environment'),
+    pants('src/python/pants/base:build_file_aliases'),
+    pants('src/python/pants/goal'),
+    pants('src/python/pants/util:contextutil'),
+    pants('tests/python/pants_test:base_test'),
   ],
 )

@@ -38,7 +38,8 @@ from pants.base.config import Config
 from pants.base.source_root import SourceRoot
 from pants.commands.goal import Goal
 from pants.commands.new import New
-from pants.goal import Goal as goal, Phase
+from pants.goal.goal import Goal as goal
+from pants.goal.phase import Phase
 
 
 class BuildFilePath(object):
