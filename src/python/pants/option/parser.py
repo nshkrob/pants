@@ -81,12 +81,7 @@ class Parser(object):
     dest = self._set_dest(args, kwargs)
 
     # Is this a boolean flag?
-    action = kwargs.get('action')
-    if action in ('store_false', 'store_true'):
-      inverse_kwargs = copy.copy(kwargs)
-      inverse_action = 'store_true' if action == 'store_false' else 'store_false'
-      inverse_kwargs['action'] = inverse_action
-      inverse_kwargs.pop('default', None)
+    if kwargs.get('action') in ('store_false', 'store_true'):
       inverse_args = []
       help_args = []
       for flag in args:
@@ -96,7 +91,6 @@ class Parser(object):
         else:
           help_args.append(flag)
     else:
-      inverse_kwargs = None
       inverse_args = None
       help_args = args
 
@@ -109,6 +103,7 @@ class Parser(object):
 
     # For parsing we register on this and all enclosed scopes.
     if inverse_args:
+      inverse_kwargs = self._create_inverse_kwargs(kwargs)
       self._register_boolean(dest, args, kwargs, inverse_args, inverse_kwargs)
     else:
       self._register(dest, args, kwargs)
@@ -178,6 +173,13 @@ class Parser(object):
     config_val = self._config.get(config_section, dest, default=None) if self._config else None
     hardcoded_val = kwargs.get('default')
     return RankedValue.choose(None, env_val, config_val, hardcoded_val)
+
+  def _create_inverse_kwargs(self, kwargs):
+    inverse_kwargs = copy.copy(kwargs)
+    inverse_action = 'store_true' if kwargs.get('action') == 'store_false' else 'store_false'
+    inverse_kwargs['action'] = inverse_action
+    inverse_kwargs.pop('default', None)
+    return inverse_kwargs
 
   def __str__(self):
     return 'Parser(%s)' % self._scope
