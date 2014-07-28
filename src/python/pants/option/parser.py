@@ -13,10 +13,12 @@ from pants.option.ranked_value import RankedValue
 
 
 class RegistrationError(Exception):
+  """An error at option registration time."""
   pass
 
 
 class ParseError(Exception):
+  """An error at flag parsing time."""
   pass
 
 

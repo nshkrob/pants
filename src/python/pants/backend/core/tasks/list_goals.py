@@ -13,12 +13,12 @@ class ListGoals(ConsoleTask):
   @classmethod
   def register_options(cls, registry):
     super(ListGoals, cls).register_options(registry)
-    registry.register_boolean('--all', default=False, action='store_true',
-                              help='List all goals even if no description is available.',
-                              legacy='goal_list_all')
-    registry.register_boolean('--graph', default=False, action='store_true',
-                              help='Generate a graphviz graph of installed goals.',
-                              legacy='goal_list_graph')
+    registry.register('--all', default=False, action='store_true',
+                      help='List all goals even if no description is available.',
+                      legacy='goal_list_all')
+    registry.register('--graph', default=False, action='store_true',
+                      help='Generate a graphviz graph of installed goals.',
+                      legacy='goal_list_graph')
 
   @classmethod
   def setup_parser(cls, option_group, args, mkflag):

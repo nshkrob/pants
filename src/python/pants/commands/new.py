@@ -42,17 +42,17 @@ class New(Command):
   output = None
 
   @classmethod
-  def register_global_options(cls, options):
-    options.register_boolean('-e', '--explain', action='store_true', default=False,
-                             help='Explain goal execution instead of actually executing them.'),
-    options.register('-l', '--level', dest='log_level', choices=['debug', 'info', 'warn'],
+  def register_global_options(cls, registry):
+    registry.register('-e', '--explain', action='store_true', default=False,
+                     help='Explain goal execution instead of actually executing them.'),
+    registry.register('-l', '--level', dest='log_level', choices=['debug', 'info', 'warn'],
                      default='info', help='Set the logging level.'),
-    options.register_boolean('--color', action='store_true', default=True,
-                             help='Colorize log messages.'),
-    options.register_boolean('-x', '--time', action='store_true', default=False,
-                             help='Print a timing report.'),
-    options.register_boolean('-q', '--quiet', action='store_true', default=False,
-                             help='Squelches all non-error console output.'),
+    registry.register('--color', action='store_true', default=True,
+                     help='Colorize log messages.'),
+    registry.register('-x', '--time', action='store_true', default=False,
+                     help='Print a timing report.'),
+    registry.register('-q', '--quiet', action='store_true', default=False,
+                     help='Squelches all non-error console output.'),
 
 # TODO(John Sirois): revisit wholesale locking when we move py support into pants new
   @classmethod

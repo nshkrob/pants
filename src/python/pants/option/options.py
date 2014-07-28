@@ -97,13 +97,6 @@ class Options(object):
     """Register an option in the global scope, using argparse params."""
     self.register('', *args, **kwargs)
 
-  def register_global_boolean(self, *args, **kwargs):
-    """Register a boolean option in the global scope, using argparse params.
-
-    An inverse option will be automatically created. E.g., --foo will have a companion --no-foo.
-    """
-    self.register_boolean('', *args, **kwargs)
-
   def get_global_parser(self):
     """Returns the parser for the given scope, so code can register on it directly."""
     return self.get_parser('')
@@ -115,13 +108,6 @@ class Options(object):
   def register(self, scope, *args, **kwargs):
     """Register an option in the given scope, using argparse params."""
     self.get_parser(scope).register(*args, **kwargs)
-
-  def register_boolean(self, scope, *args, **kwargs):
-    """Register a boolean option in the given scope, using argparse params.
-
-    An inverse option will be automatically created. E.g., --foo will have a companion --no-foo.
-    """
-    self._parser_hierarchy.get_parser_by_scope(scope).register_boolean(*args, **kwargs)
 
   def for_global_scope(self):
     """Return the option values for the global scope.

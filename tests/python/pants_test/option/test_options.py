@@ -27,9 +27,9 @@ class OptionsTest(unittest.TestCase):
       return self._values[section][name]
 
   def _register(self, options):
-    options.register_global_boolean('-v', '--verbose', action='store_true', help='Verbose output.')
+    options.register_global('-v', '--verbose', action='store_true', help='Verbose output.')
     options.register_global('-n', '--num', type=int, default=99)
-    options.register_global_boolean('-x', '--xlong', action='store_true')
+    options.register_global('-x', '--xlong', action='store_true')
 
     # For the design doc example test.
     options.register_global('--a', type=int)
