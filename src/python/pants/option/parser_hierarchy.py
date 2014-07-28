@@ -148,8 +148,8 @@ class Parser(object):
     If an option is re-registered in an inner scope, it'll shadow the external dest but will
     use a different internal one. This is important in the case that an option is registered
     with two names (say -x, --xlong) and we only re-register one of them, say --xlong, in an
-    inner scope. In this case we no longer want them to write to the same dest, so that
-    we can use both (now with different meanings) in the inner scope.
+    inner scope. In this case we no longer want them to write to the same dest, so we can
+    use both (now with different meanings) in the inner scope.
 
     Note: Modfies kwargs.
     """
