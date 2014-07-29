@@ -28,7 +28,6 @@ from pants.util.dirutil import safe_mkdir
 # 2.) the target may be under development in which case it may not have sources yet - its pretty
 #     common to write a BUILD and ./pants goal idea the target inside to start development at which
 #     point there are no source files yet - and the developer intents to add them using the ide.
-
 def is_scala(target):
   return target.has_sources('.scala') or target.is_scala
 
@@ -56,11 +55,6 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
                                  "this trumps %s and not all project related files will be stored "
                                  "there." % gen_dir)
 
-    option_group.add_option(mkflag("intransitive"), default=False,
-                            action="store_true", dest='ide_gen_intransitive',
-                            help="Limits the sources included in the generated project to just "
-                                 "those owned by the targets specified on the command line")
-
     option_group.add_option(mkflag("python"), mkflag("python", negate=True), default=False,
                             action="callback", callback=mkflag.set_bool, dest='ide_gen_python',
                             help="[%default] Adds python support to the generated project "
@@ -86,7 +80,6 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
                             action="callback", callback=mkflag.set_bool, dest='ide_gen_scala',
                             help="[%default] Includes scala sources in the project; otherwise "
                                  "compiles them and adds them to the project classpath.")
-
 
   class Error(TaskError):
     """IdeGen Error."""
@@ -132,8 +125,6 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
       else self.gen_project_workdir
     )
 
-    self.intransitive = context.options.ide_gen_intransitive
-
     self.checkstyle_suppression_files = context.config.getdefault(
       'checkstyle_suppression_files', type=list, default=[]
     )
@@ -171,8 +162,6 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
 
   def configure_project(self, targets, checkstyle_suppression_files, debug_port):
     jvm_targets = [t for t in targets if t.has_label('jvm') or t.has_label('java')]
-    if self.intransitive:
-      jvm_targets = set(self.context.target_roots).intersection(jvm_targets)
     project = Project(self.project_name,
                       self.python,
                       self.skip_java,
@@ -181,7 +170,6 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
                       checkstyle_suppression_files,
                       debug_port,
                       jvm_targets,
-                      not self.intransitive,
                       self.context.new_workunit,
                       self.TargetUtil(self.context))
 
@@ -210,7 +198,7 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
         target.is_apt or
         (self.skip_java and is_java(target)) or
         (self.skip_scala and is_scala(target)) or
-        (self.intransitive and target not in self.context.target_roots)
+        (target not in self.context.target_roots)
       )
 
     jars = OrderedSet()
@@ -402,7 +390,7 @@ class Project(object):
         yield ext
 
   def __init__(self, name, has_python, skip_java, skip_scala, root_dir,
-               checkstyle_suppression_files, debug_port, targets, transitive, workunit_factory,
+               checkstyle_suppression_files, debug_port, targets, workunit_factory,
                target_util):
     """Creates a new, unconfigured, Project based at root_dir and comprised of the sources visible
     to the given targets."""
@@ -411,7 +399,6 @@ class Project(object):
     self.name = name
     self.root_dir = root_dir
     self.targets = OrderedSet(targets)
-    self.transitive = transitive
     self.workunit_factory = workunit_factory
 
     self.sources = []
@@ -458,10 +445,10 @@ class Project(object):
       return [os.path.relpath(source, target.target_base) for source in sources]
 
     def source_target(target):
-      result = ((self.transitive or target in self.targets) and
-              target.has_sources() and
-              (not (self.skip_java and is_java(target)) and
-               not (self.skip_scala and is_scala(target))))
+      result = (target in self.targets and
+                target.has_sources() and
+                (not (self.skip_java and is_java(target)) and
+                 not (self.skip_scala and is_scala(target))))
       return result
 
     def configure_source_sets(relative_base, sources, is_test):
@@ -513,7 +500,7 @@ class Project(object):
         # sources they own that live in the directories this targets sources live in.
         target_dirset = find_source_basedirs(target)
         if target.address.is_synthetic:
-          return [] # Siblings don't make sense for synthetic addresses.
+          return []  # Siblings don't make sense for synthetic addresses.
         candidates = self.target_util.get_all_addresses(target.address.build_file)
         for ancestor in target.address.build_file.ancestors():
           candidates.update(self.target_util.get_all_addresses(ancestor))
@@ -524,7 +511,8 @@ class Project(object):
         def is_sibling(target):
           return source_target(target) and target_dirset.intersection(find_source_basedirs(target))
 
-        return filter(is_sibling, [self.target_util.get(a) for a in candidates if a != target.address])
+        return filter(is_sibling,
+                      [self.target_util.get(a) for a in candidates if a != target.address])
 
     for target in self.targets:
       target.walk(configure_target, predicate=source_target)
