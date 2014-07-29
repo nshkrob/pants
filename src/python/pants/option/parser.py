@@ -78,6 +78,8 @@ class Parser(object):
       ancestor._frozen = True
       ancestor = ancestor._parent_parser
 
+    self._validate(args, kwargs)
+
     dest = self._set_dest(args, kwargs)
 
     # Is this a boolean flag?
@@ -127,6 +129,11 @@ class Parser(object):
     for child_parser in self._child_parsers:
       child_parser._register_boolean(dest, args, kwargs, inverse_args, inverse_kwargs)
 
+  def _validate(self, args, kwargs):
+    for k in ['nargs', 'required']:
+      if k in kwargs:
+        raise RegistrationError('%s unsupported in registration of option %s.' % (k, args))
+
   def _set_dest(self, args, kwargs):
     """Maps the externally-used dest to a scoped one only seen internally.
 
@@ -149,7 +156,8 @@ class Parser(object):
 
     # Support for legacy flags.  Remove when the transition to new options is complete.
     legacy = kwargs.pop('legacy', None)
-    self._dest_forwardings[scoped_dest] = legacy
+    if legacy:  # Forward another hop, to the legacy dest.
+      self._dest_forwardings[scoped_dest] = legacy
 
     return dest
 
