@@ -5,7 +5,9 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
+import optparse
 import pytest
+import shlex
 import unittest
 
 from pants.option.legacy_options import LegacyOptions
@@ -13,4 +15,24 @@ from pants.option.legacy_options import LegacyOptions
 
 class LegacyOptionsTest(unittest.TestCase):
   def test_registration(self):
-    pass
+    optparser = optparse.OptionParser()
+    legacy_options = LegacyOptions('compile.java', optparser)
+    legacy_options.register('--foo', legacy='compile_java_foo', action='store_true')
+    legacy_options.register('--bar', type=long, legacy='compile_java_bar')
+    legacy_options.register('--baz', choices=['xx', 'yy', 'zz'], legacy='compile_java_baz')
+    legacy_options.register('--qux', type=int, choices=[1, 2, 3], legacy='compile_java_qux',
+                            action='append')
+    legacy_options.register('--corge', type=int, legacy='compile_java_corge', default=55)
+
+    args = shlex.split(str('--compile-java-foo --compile-java-bar=33 --compile-java-baz=xx '
+                           '--compile-java-qux=1 --compile-java-qux=4'))
+    opts, _ = optparser.parse_args(args)
+    self.assertTrue(opts.compile_java_foo)
+    self.assertEquals(opts.compile_java_bar, 33)
+    self.assertEquals(opts.compile_java_baz, 'xx')
+    self.assertEquals(opts.compile_java_qux, [1, 4])  # Choices not enforced for non-string types.
+    self.assertEquals(opts.compile_java_corge, 55)  # Defaults preserved.
+
+    with pytest.raises(SystemExit):
+      args = shlex.split(str('--compile-java-baz=ww'))  # Choices enforced for string types.
+      opts, _ = optparser.parse_args(args)

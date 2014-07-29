@@ -28,7 +28,7 @@ class LegacyOptions(object):
 
   def __init__(self, scope, optparser):
     """Register for the given scope, into the given optparser."""
-    self._prefix = scope.replace('.', '-')
+    self._scope_prefix = scope.replace('.', '-')
     self._optparser = optparser
 
   def register(self, *args, **kwargs):
@@ -38,27 +38,38 @@ class LegacyOptions(object):
     """
     dest = kwargs.pop('legacy', None)
     if dest:
-      self._optparser.add_option(*args, **kwargs)
       # The args/kwargs are argparse-style, whereas we need optparse-style, so
       # we perform necessary adjustments here.
+      optparse_args = []
+      for arg in args:
+        if arg.startswith('--'):
+          optparse_args.append('--%s-%s' % (self._scope_prefix, arg[2:]))
+        elif arg.startswith('-'):
+          if self._scope_prefix == '':
+            optparse_args.append(arg)
+          else:
+            raise LegacyOptionsError('Short legacy options only allowed at global scope.')
+
       optparse_kwargs = copy.copy(kwargs)
       optparse_kwargs['dest'] = dest
 
       # The 'type' kwarg is a function in argparse but a string in optparse.
-      typ = optparse_kwargs.pop('type', str)
-      if typ not in LegacyOptions.OPTPARSE_TYPES:
-        raise LegacyOptionsError('Invalid optparse type: %s' % typ)
-      optparse_kwargs['type'] = typ.__name__
+      typ = optparse_kwargs.pop('type', None)
+      if typ:
+        if typ in LegacyOptions.OPTPARSE_TYPES:
+          optparse_kwargs['type'] = typ.__name__
+        else:
+          raise LegacyOptionsError('Invalid optparse type: %s' % typ)
 
       # 'choice' is a string subtype in optparse.
       choices = optparse_kwargs.get('choices', None)
-      if choices and typ == str:
+      if choices and (typ is None or typ == str):
         optparse_kwargs['type'] = 'choice'
-      else:  # optparse doesn't support non-string choices, so remove the choices restriction.
-        optparse_kwargs.pop('choices')
+      else:  # optparse doesn't support non-string choices, so ignore the choices restriction.
+        optparse_kwargs.pop('choices', None)
 
       action = optparse_kwargs.get('action', 'store')
       if action not in LegacyOptions.OPTPARSE_ACTIONS:
         raise LegacyOptionsError('Invalid optparse action: %s' % action)
 
-      self._optparser.add_option(*args, **optparse_kwargs)
+      self._optparser.add_option(*optparse_args, **optparse_kwargs)

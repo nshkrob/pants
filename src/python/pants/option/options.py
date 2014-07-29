@@ -9,7 +9,7 @@ import copy
 import sys
 
 from pants.base.build_environment import pants_release
-from pants.goal import Phase
+from pants.goal.phase import Phase
 from pants.option.arg_splitter import ArgSplitter
 from pants.option.option_value_container import OptionValueContainer
 from pants.option.parser import ParseError
