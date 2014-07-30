@@ -20,19 +20,6 @@ class ListGoals(ConsoleTask):
                       help='Generate a graphviz graph of installed goals.',
                       legacy='goal_list_graph')
 
-  @classmethod
-  def setup_parser(cls, option_group, args, mkflag):
-    super(ListGoals, cls).setup_parser(option_group, args, mkflag)
-    option_group.add_option(mkflag("all"),
-                            dest="goal_list_all",
-                            default=False,
-                            action="store_true",
-                            help="[%default] List all goals even if no description is available.")
-    option_group.add_option(mkflag('graph'),
-                            dest='goal_list_graph',
-                            action='store_true',
-                            help='[%default] Generate a graphviz graph of installed goals.')
-
   def console_output(self, targets):
     def report():
       yield 'Installed goals:'

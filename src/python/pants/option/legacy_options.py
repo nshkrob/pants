@@ -31,17 +31,13 @@ class LegacyOptions(object):
     self._scope_prefix = scope.replace('.', '-')
     self._optparser = optparser
 
-  def register(self, *args, **kwargs):
-    """Register the option, using argparse params.
-
-    Modifies kwargs in place by removing any legacy-related keys.
-    """
-    dest = kwargs.pop('legacy', None)
-    if dest:
+  def register(self, args, kwargs, legacy_dest=None, legacy_args=None):
+    """Register the option, using argparse params."""
+    if legacy_dest:
       # The args/kwargs are argparse-style, whereas we need optparse-style, so
       # we perform necessary adjustments here.
       optparse_args = []
-      for arg in args:
+      for arg in legacy_args or args:
         if arg.startswith('--'):
           optparse_args.append('--%s-%s' % (self._scope_prefix, arg[2:]))
         elif arg.startswith('-'):
@@ -51,7 +47,7 @@ class LegacyOptions(object):
             raise LegacyOptionsError('Short legacy options only allowed at global scope.')
 
       optparse_kwargs = copy.copy(kwargs)
-      optparse_kwargs['dest'] = dest
+      optparse_kwargs['dest'] = legacy_dest
 
       # The 'type' kwarg is a function in argparse but a string in optparse.
       typ = optparse_kwargs.pop('type', None)

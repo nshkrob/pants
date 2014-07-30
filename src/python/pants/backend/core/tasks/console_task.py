@@ -19,11 +19,6 @@ class ConsoleTask(Task):
                       help='String used to separate results.',
                       legacy='console_%s_separator' % cls.__name__)
 
-  @classmethod
-  def setup_parser(cls, option_group, args, mkflag):
-    option_group.add_option(mkflag("sep"), dest="console_%s_separator" % cls.__name__,
-                            default='\\n', help="String to use to separate results.")
-
   def __init__(self, context, workdir, options=None, outstream=sys.stdout):
     super(ConsoleTask, self).__init__(context, workdir, options)
     self._console_separator = self.options.sep.decode('string-escape')

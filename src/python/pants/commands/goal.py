@@ -111,6 +111,7 @@ class Goal(Command):
   def __init__(self, *args, **kwargs):
     self.targets = []
     self.config = None
+    self._new_options = None
     super(Goal, self).__init__(*args, **kwargs)
 
   @contextmanager
@@ -148,6 +149,18 @@ class Goal(Command):
 
   def setup_parser(self, parser, args):
     self.config = Config.load()
+
+    # Create a new-style Options instance that can register legacy options and also
+    # proxy reads to them. This allows us to gradually transition task code.
+    known_scopes = ['']
+    for phase, goals in Phase.all():
+      known_scopes.append(phase.name)
+      for goal in goals:
+        known_scopes.append('%s.%s' % (phase.name, goal.name))
+    self._new_options = Options(env=None, config=None, known_scopes=known_scopes, args=[],
+                                legacy_parser=parser)
+    self._register_new_options()
+
     add_global_options(parser)
 
     # We support attempting zero or more goals.  Multiple goals must be delimited from further
@@ -219,6 +232,7 @@ class Goal(Command):
     # context/work-unit logging and standard python logging doesn't buy us anything.
 
     # Enable standard python logging for code with no handle to a context/work-unit.
+    self._new_options.set_legacy_values(self.options)
     if self.options.log_level:
       LogOptions.set_stderr_log_level((self.options.log_level or 'info').upper())
       logdir = self.options.logdir or self.config.get('goals', 'logdir', default=None)
@@ -241,26 +255,10 @@ class Goal(Command):
     update_reporting(self.options, is_console_task() or is_explain, self.run_tracker,
                      self.options.logdir)
 
-    # Create a dummy new-style Options instance that simply proxies to old-style options.
-    # This allows us to gradually transition task code to read from the new Options
-    # instance, without imposing change on users (yet).
-    known_scopes = ['']
-    for phase, goals in Phase.all():
-      known_scopes.append(phase.name)
-      for goal in goals:
-        known_scopes.append('%s.%s' % (phase.name, goal.name))
-    new_options = Options(env=None, config=None, known_scopes=known_scopes, args=[],
-                          legacy=self.options)
-
-    for phase, goals in Phase.all():
-      phase.register_options(new_options.get_parser(phase.name))
-      for goal in goals:
-        goal.task_type.register_options(new_options.get_parser('%s.%s' % (phase.name, goal.name)))
-
     context = Context(
       self.config,
       self.options,
-      new_options,
+      self._new_options,
       self.run_tracker,
       self.targets,
       requested_goals=self.requested_goals,
@@ -286,3 +284,25 @@ class Goal(Command):
     # may not need to be killed.
     NailgunTask.killall(log.info)
     sys.exit(1)
+
+  def _register_new_options(self):
+    #self.register_global_options(self.options.get_global_parser())
+    for phase, goals in Phase.all():
+      phase.register_options(self._new_options.get_parser(phase.name))
+      # As a convenience, if a goal has the same name as its phase, we register its options
+      # directly on the phase. This way users can do ./pants foo --flag instead of
+      # ./pants foo.foo --flag.
+      same_named_goals = []
+      other_goals = []  # Should only contain 0 or 1 element.
+      for goal in goals:
+        if goal.name == phase.name:
+          same_named_goals.append(goal)
+        else:
+          other_goals.append(goal)
+      # Must register these first, as the phase-level options will be locked once we
+      # register in any sub-scope.
+      for goal in same_named_goals:
+        goal.task_type.register_options(self._new_options.get_parser(phase.name))
+      for goal in other_goals:
+        goal_scope = '%s.%s' % (phase.name, goal.name)
+        goal.task_type.register_options(self._new_options.get_parser(goal_scope))

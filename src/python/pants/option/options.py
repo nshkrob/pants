@@ -62,12 +62,13 @@ class Options(object):
     - The hard-coded value provided at registration time.
     - None.
   """
-  def __init__(self, env, config, known_scopes, args=sys.argv, legacy=None):
+  def __init__(self, env, config, known_scopes, args=sys.argv, legacy_parser=None):
     splitter = ArgSplitter(known_scopes)
     self._scope_to_flags, self._target_specs = splitter.split_args(args)
     self._is_help = splitter.is_help
-    self._parser_hierarchy = ParserHierarchy(env, config, known_scopes)
-    self._legacy = legacy  # Old-style options, used temporarily during transition.
+    self._parser_hierarchy = ParserHierarchy(env, config, known_scopes, legacy_parser)
+    self._legacy_parser = legacy_parser  # Old-style options, used temporarily during transition.
+    self._legacy_values = None  # Values parsed from old-stype options.
     self._values_by_scope = {}  # Arg values, parsed per-scope on demand.
 
   @property
@@ -86,6 +87,9 @@ class Options(object):
   def is_help(self):
     """Whether the command line indicates a request for help."""
     return self._is_help
+
+  def set_legacy_values(self, legacy_values):
+    self._legacy_values = legacy_values
 
   def format_global_help(self):
     return self.get_global_parser().format_help()
@@ -130,8 +134,8 @@ class Options(object):
     # First get enclosing scope's option values, if any.
     if scope == '':
       values = OptionValueContainer()
-      if self._legacy:
-        values.update(vars(self._legacy))
+      if self._legacy_values:
+        values.update(vars(self._legacy_values))  # Proxy legacy option values.
     else:
       values = copy.copy(self.for_scope(scope.rpartition('.')[0]))
 

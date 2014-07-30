@@ -17,13 +17,13 @@ class ParserHierarchy(object):
   We use these scopes to represent phases and tasks.  This structure organizes the
   Parser instances that know how to parse flags for each phase and task.
   """
-  def __init__(self, env, config, all_scopes):
+  def __init__(self, env, config, all_scopes, legacy_parser=None):
     # Sorting ensures that ancestors precede descendants.
     all_scopes = sorted(set(list(all_scopes) + ['']))
     self._parser_by_scope = {}
     for scope in all_scopes:
       parent_parser = None if scope == '' else self._parser_by_scope[scope.rpartition('.')[0]]
-      self._parser_by_scope[scope] = Parser(env, config, scope, parent_parser)
+      self._parser_by_scope[scope] = Parser(env, config, scope, parent_parser, legacy_parser)
 
   def get_parser_by_scope(self, scope):
     return self._parser_by_scope[scope]
