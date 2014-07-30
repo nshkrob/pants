@@ -72,8 +72,11 @@ class Parser(object):
     namespace.update(vars(new_args))
     return namespace
 
-  def format_help(self):
-    return self._help_argparser.format_help()
+  def format_help(self, legacy=False):
+    if legacy:
+      return self._legacy_options.format_help()
+    else:
+      return self._help_argparser.format_help()
 
   def register(self, *args, **kwargs):
     """Register an option, using argparse params."""

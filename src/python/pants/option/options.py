@@ -91,11 +91,11 @@ class Options(object):
   def set_legacy_values(self, legacy_values):
     self._legacy_values = legacy_values
 
-  def format_global_help(self):
-    return self.get_global_parser().format_help()
+  def format_global_help(self, legacy=False):
+    return self.get_global_parser().format_help(legacy=legacy)
 
-  def format_help(self, scope):
-    return self.get_parser(scope).format_help()
+  def format_help(self, scope, legacy=False):
+    return self.get_parser(scope).format_help(legacy=legacy)
 
   def register_global(self, *args, **kwargs):
     """Register an option in the global scope, using argparse params."""
@@ -149,31 +149,32 @@ class Options(object):
       self.print_help(str(e))
       sys.exit(1)
 
-  def print_help(self, msg=None):
+  def print_help(self, msg=None, phases=None, legacy=False):
     """Print a help screen, followed by an optional message.
 
     Note: Ony useful if called after options have been registered.
     """
-    if self.phases:
-      for phase_name in self.phases:
+    phases = phases or self.phases
+    if phases:
+      for phase_name in phases:
         phase = Phase(phase_name)
         if not phase.goals():
           print('\nUnknown goal: %s' % phase_name)
         else:
           print('\n%s options:' % phase.name)
-          print(self.format_help('%s' % phase.name))
+          print(self.format_help('%s' % phase.name, legacy=legacy))
           for goal in phase.goals():
             if goal.name != phase.name:  # Otherwise we registered on the phase scope.
               scope = '%s.%s' % (phase.name, goal.name)
               print('\n%s options:' % scope)
-              print(self.format_help(scope))
+              print(self.format_help(scope, legacy=legacy))
     else:
       print(pants_release())
       print('\nUsage:')
-      print('  ./pants new [option ...] [goal ...] [target...]  Attempt the specified goals.')
-      print('  ./pants new help                                 Get help.')
-      print('  ./pants new help [goal]                          Get help for the specified goal.')
-      print('  ./pants new goals                                List all installed goals.')
+      print('  ./pants goal [option ...] [goal ...] [target...]  Attempt the specified goals.')
+      print('  ./pants goal help                                 Get help.')
+      print('  ./pants goal help [goal]                          Get help for the specified goal.')
+      print('  ./pants goal goals                                List all installed goals.')
       print('')
       print('  [target] accepts two special forms:')
       print('    dir:  to include all targets in the specified directory.')

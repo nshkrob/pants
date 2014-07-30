@@ -32,7 +32,6 @@ from pants.engine.round_engine import RoundEngine
 from pants.goal.context import Context
 from pants.goal.goal import GoalError
 from pants.goal.phase import Phase
-from pants.goal.help import print_help
 from pants.goal.initialize_reporting import update_reporting
 from pants.goal.option_helpers import add_global_options
 from pants.option.options import Options
@@ -183,7 +182,8 @@ class Goal(Command):
 
     goals, specs = Goal.parse_args(non_help_args)
     if show_help:
-      print_help(goals)
+      self._new_options.print_help(phases=goals, legacy=True)
+      #print_help(goals)
       sys.exit(0)
 
     self.requested_goals = goals
@@ -286,7 +286,7 @@ class Goal(Command):
     sys.exit(1)
 
   def _register_new_options(self):
-    #self.register_global_options(self.options.get_global_parser())
+    self.register_global_options(self._new_options.get_global_parser())
     for phase, goals in Phase.all():
       phase.register_options(self._new_options.get_parser(phase.name))
       # As a convenience, if a goal has the same name as its phase, we register its options
@@ -306,3 +306,16 @@ class Goal(Command):
       for goal in other_goals:
         goal_scope = '%s.%s' % (phase.name, goal.name)
         goal.task_type.register_options(self._new_options.get_parser(goal_scope))
+
+
+  def register_global_options(self, registry):
+    registry.register('-e', '--explain', action='store_true', default=False,
+                      help='Explain goal execution instead of actually executing them.'),
+    registry.register('-l', '--level', dest='log_level', choices=['debug', 'info', 'warn'],
+                      default='info', help='Set the logging level.'),
+    registry.register('--color', action='store_true', default=True,
+                      help='Colorize log messages.'),
+    registry.register('-x', '--time', action='store_true', default=False,
+                      help='Print a timing report.'),
+    registry.register('-q', '--quiet', action='store_true', default=False,
+                      help='Squelches all non-error console output.'),

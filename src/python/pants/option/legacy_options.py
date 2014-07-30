@@ -6,7 +6,7 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
                         print_function, unicode_literals)
 
 import copy
-
+from optparse import IndentedHelpFormatter, OptionGroup
 
 
 class LegacyOptionsError(Exception):
@@ -30,6 +30,10 @@ class LegacyOptions(object):
     """Register for the given scope, into the given optparser."""
     self._scope_prefix = scope.replace('.', '-')
     self._optparser = optparser
+    self._optparser_group = OptionGroup(self._optparser, scope) if scope else None
+    if self._optparser_group:
+      self._optparser.add_option_group(self._optparser_group)
+    self._registered_dests = set()  # Needed for printing help messages.
 
   def register(self, args, kwargs, legacy_dest=None, legacy_args=None):
     """Register the option, using argparse params."""
@@ -68,4 +72,14 @@ class LegacyOptions(object):
       if action not in LegacyOptions.OPTPARSE_ACTIONS:
         raise LegacyOptionsError('Invalid optparse action: %s' % action)
 
-      self._optparser.add_option(*optparse_args, **optparse_kwargs)
+      options_container = self._optparser_group or self._optparser
+      options_container.add_option(*optparse_args, **optparse_kwargs)
+      self._registered_dests.add(legacy_dest)
+
+  def format_help(self):
+    self._optparser.formatter.store_option_strings(self._optparser)
+    if self._optparser_group:
+      return self._optparser_group.format_help(self._optparser.formatter)
+    else:
+      return ''
+    

@@ -23,7 +23,7 @@ def print_help(goals=None):
 
         phase.setup_parser(parser, [], [phase])
         print('\n%s: %s' % (phase.name, phase.description))
-        _print_flags(parser, phase.name)
+        print_flags(parser, phase.name)
   else:
     print(pants_release())
     print('\nUsage:')
@@ -38,7 +38,7 @@ def print_help(goals=None):
 
     print('\nFriendly docs:\n  http://pantsbuild.github.io/')
 
-    _print_global_flags()
+    print_global_flags()
 
 
 # Note: we create temporary OptionParsers just for formatting the flag help strings.
@@ -46,13 +46,13 @@ def print_help(goals=None):
 # allows us much better control over the output. And we'll be getting off optparse
 # soon and onto our own cmd-line parser anyway.
 
-def _print_global_flags():
+def print_global_flags():
   parser = OptionParser(add_help_option=False)
   add_global_options(parser)
-  _print_flags(parser, 'Global')
+  print_flags(parser, 'Global')
 
 
-def _print_flags(parser, main_heading):
+def print_flags(parser, main_heading, dests=None):
   parser.formatter.store_option_strings(parser)
 
   opt_strs = []
@@ -60,8 +60,9 @@ def _print_flags(parser, main_heading):
     if opts:
       opt_strs.append('\n%s options:' % heading)
       for opt in opts:
-        for s in parser.formatter.format_option(opt).splitlines():
-          opt_strs.append('  ' + s)
+        if dests is None or opt in dests:
+          for s in parser.formatter.format_option(opt).splitlines():
+            opt_strs.append('  ' + s)
 
   add_opt_strs(parser.option_list, main_heading)
   for opt_group in parser.option_groups:
