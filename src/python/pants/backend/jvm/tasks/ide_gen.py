@@ -185,22 +185,6 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
     return all_targets, project
 
   def configure_compile_context(self, targets):
-    """
-      Trims the context's target set to just those targets needed as jars on the IDE classpath.
-      All other targets only contribute their external jar dependencies and excludes to the
-      classpath definition.
-    """
-    def is_cp(target):
-      return (
-        target.is_codegen or
-        # Some IDEs need annotation processors pre-compiled, others are smart enough to detect and
-        # proceed in 2 compile rounds
-        target.is_apt or
-        (self.skip_java and is_java(target)) or
-        (self.skip_scala and is_scala(target)) or
-        (target not in self.context.target_roots)
-      )
-
     jars = OrderedSet()
     excludes = OrderedSet()
     compiles = OrderedSet()
@@ -209,8 +193,7 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
         if target.excludes:
           excludes.update(target.excludes)
         jars.update(jar for jar in target.jar_dependencies if jar.rev)
-        if is_cp(target):
-          target.walk(compiles.add)
+        target.walk(compiles.add)
 
     for target in targets:
       target.walk(prune)
