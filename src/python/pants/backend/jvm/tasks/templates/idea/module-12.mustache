@@ -51,8 +51,6 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
     {{/module.content_roots}}
       <excludeFolder url="file://$MODULE_DIR$/external-libs" />
       <excludeFolder url="file://$MODULE_DIR$/external-libsources" />
-      <excludeFolder url="file://$MODULE_DIR$/internal-libs" />
-      <excludeFolder url="file://$MODULE_DIR$/internal-libsources" />
       # TODO(Garrett Malmquist): Do this in a generic way, rather than hard-coding particular
       # directories.
       <excludeFolder url="file://${module.root_dir}/.pants.d/compile" />
@@ -66,7 +64,6 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
     {{#module.scala?}}
     <orderEntry type="library" name="scala" level="project"/>
     {{/module.scala?}}
-    </orderEntry>
     <orderEntry type="module-library">
       <library name="external">
         <CLASSES>
