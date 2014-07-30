@@ -66,20 +66,6 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
     {{#module.scala?}}
     <orderEntry type="library" name="scala" level="project"/>
     {{/module.scala?}}
-    <orderEntry type="module-library">
-      <library name="internal">
-        <CLASSES>
-          {{#module.internal_jars}}
-          <root url="jar://{{.}}!/" />
-          {{/module.internal_jars}}
-        </CLASSES>
-        <JAVADOC />
-        <SOURCES>
-          {{#module.internal_source_jars}}
-          <root url="jar://{{.}}!/" />
-          {{/module.internal_source_jars}}
-        </SOURCES>
-      </library>
     </orderEntry>
     <orderEntry type="module-library">
       <library name="external">

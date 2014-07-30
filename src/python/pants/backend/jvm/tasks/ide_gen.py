@@ -205,40 +205,6 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
       str(t) for t in self.context.targets())
     )
 
-  def map_internal_jars(self, targets):
-    internal_jar_dir = os.path.join(self.gen_project_workdir, 'internal-libs')
-    safe_mkdir(internal_jar_dir, clean=True)
-
-    internal_source_jar_dir = os.path.join(self.gen_project_workdir, 'internal-libsources')
-    safe_mkdir(internal_source_jar_dir, clean=True)
-
-    internal_jars = self.context.products.get('jars')
-    internal_source_jars = self.context.products.get('source_jars')
-    for target in targets:
-      mappings = internal_jars.get(target)
-      if mappings:
-        for base, jars in mappings.items():
-          if len(jars) != 1:
-            raise IdeGen.Error('Unexpected mapping, multiple jars for %s: %s' % (target, jars))
-
-          jar = jars[0]
-          cp_jar = os.path.join(internal_jar_dir, jar)
-          shutil.copy(os.path.join(base, jar), cp_jar)
-
-          cp_source_jar = None
-          mappings = internal_source_jars.get(target)
-          if mappings:
-            for base, jars in mappings.items():
-              if len(jars) != 1:
-                raise IdeGen.Error(
-                  'Unexpected mapping, multiple source jars for %s: %s' % (target, jars)
-                )
-              jar = jars[0]
-              cp_source_jar = os.path.join(internal_source_jar_dir, jar)
-              shutil.copy(os.path.join(base, jar), cp_source_jar)
-
-          self._project.internal_jars.add(ClasspathEntry(cp_jar, source_jar=cp_source_jar))
-
   def _get_jar_paths(self, jars=None, confs=None):
     """Returns a list of dicts containing the paths of various jar file resources.
 
@@ -308,8 +274,6 @@ class IdeGen(JvmBinaryTask, JvmToolTaskMixin):
       scalac_classpath = []
 
     self._project.set_tool_classpaths(checkstyle_classpath, scalac_classpath)
-    targets = self.context.targets()
-    self.map_internal_jars(targets)
     self.map_external_jars()
 
     idefile = self.generate_project(self._project)
@@ -398,7 +362,6 @@ class Project(object):
     self.checkstyle_suppression_files = checkstyle_suppression_files  # Absolute paths.
     self.debug_port = debug_port
 
-    self.internal_jars = OrderedSet()
     self.external_jars = OrderedSet()
 
   def configure_python(self, source_roots, test_roots, lib_roots):
