@@ -391,8 +391,7 @@ class Project(object):
       return [os.path.relpath(source, target.target_base) for source in sources]
 
     def source_target(target):
-      result = (target in self.targets and
-                target.has_sources() and
+      result = (target.has_sources() and
                 (not (self.skip_java and is_java(target)) and
                  not (self.skip_scala and is_scala(target))))
       return result
