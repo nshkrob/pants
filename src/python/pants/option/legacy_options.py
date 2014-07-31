@@ -14,26 +14,30 @@ class LegacyOptionsError(Exception):
 
 
 class LegacyOptions(object):
-  """Register new-style options in the old style.
+  """Registers new-style options onto the old-style OptionParser.
 
-  This is so we can support old-style command-lines during migration to the new options system.
+  The scope of a new style option is converted to a prefix on the old-style one, e.g.,
+  --foo in scope compile.scala becomes --compile-scala-foo.
+
+  This is a temporary class needed only during migration to the new options system.
+  It allows us to convert registration code to the new style while still supporting
+  the old flags at runtime.
   """
 
-  # Optparse can only support options of these types. After migration is complete and this
-  # class is deleted, feel free to use other types for your new-style options.
+  # optparse can only support options of these types. During migration we may only
+  # use these types. After migration is complete and this class is deleted, we can use
+  # other types in exclusively new-style options.
   OPTPARSE_TYPES = set([str, int, long, float, complex])
 
+  # optparse only supports these actions.
   OPTPARSE_ACTIONS = set(['store', 'store_const', 'store_true', 'store_false',
                           'append', 'append_const', 'count'])
 
   def __init__(self, scope, optparser):
-    """Register for the given scope, into the given optparser."""
+    """This object registers on behalf of the given scope, into the given optparser."""
     self._scope_prefix = scope.replace('.', '-')
     self._optparser = optparser
-    self._optparser_group = self._get_option_group(scope, optparser)
-    if self._optparser_group:
-      self._optparser.add_option_group(self._optparser_group)
-    self._registered_dests = set()  # Needed for printing help messages.
+    self._option_group = self._get_option_group(scope, optparser)
 
   def register(self, args, kwargs, legacy_dest=None, legacy_args=None):
     """Register the option, using argparse params."""
@@ -42,6 +46,7 @@ class LegacyOptions(object):
 
       # The args/kwargs are argparse-style, whereas we need optparse-style, so
       # we perform necessary adjustments here.
+
       optparse_args = []
       for arg in legacy_args or args:
         if arg.startswith('--no-'):
@@ -76,14 +81,18 @@ class LegacyOptions(object):
       if action not in LegacyOptions.OPTPARSE_ACTIONS:
         raise LegacyOptionsError('Invalid optparse action: %s' % action)
 
-      options_container = self._optparser_group or self._optparser
+      options_container = self._option_group or self._optparser
       options_container.add_option(*optparse_args, **optparse_kwargs)
-      self._registered_dests.add(legacy_dest)
 
   def format_help(self):
+    """Return a help message for the old-style options.
+
+    Note that this message will reflect all options registered in the
+    relevant group, whether by this object or via the old registration code.
+    """
     self._optparser.formatter.store_option_strings(self._optparser)
-    if self._optparser_group and self._optparser_group.option_list:
-      return self._optparser_group.format_help(self._optparser.formatter)
+    if self._option_group and self._option_group.option_list:
+      return self._option_group.format_help(self._optparser.formatter)
     else:
       return ''
 
@@ -94,5 +103,6 @@ class LegacyOptions(object):
     for option_group in optparser.option_groups:
       if option_group.title == scope:
         return option_group
-    return OptionGroup(optparser, scope)
-
+    option_group = OptionGroup(optparser, scope)
+    optparser.add_option_group(option_group)
+    return option_group
