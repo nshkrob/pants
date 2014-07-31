@@ -22,6 +22,7 @@ from pants.base.target import Target
 from pants.option.options import Options
 from pants.goal.context import Context
 from pants.goal.goal import Mkflag
+from pants.goal.phase import Phase
 from pants_test.base_test import BaseTest
 from pants_test.base.context_utils import create_config, create_run_tracker
 
@@ -121,6 +122,7 @@ class ConsoleTaskTest(TaskTest):
   """A baseclass useful for testing ConsoleTasks."""
 
   def setUp(self):
+    Phase.clear()
     super(ConsoleTaskTest, self).setUp()
 
     task_type = self.task_type()

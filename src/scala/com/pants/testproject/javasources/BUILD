@@ -3,9 +3,15 @@
 
 scala_library(
   name = 'javasources',
-  dependencies = [],
   java_sources=[
-    pants('src/java/com/pants/testproject/javasources')
+    pants('src/java/com/pants/testproject/javasources'),
+    pants('src/java/com/pants/examples/hello/greet:greet')
   ],
   sources = rglobs('*.scala')
+)
+
+benchmark(name='benchmark',
+  dependencies=[
+  ],
+  sources=rglobs('com/pants/testproject/javasources/*.scala')
 )

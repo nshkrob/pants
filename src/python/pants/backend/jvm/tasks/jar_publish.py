@@ -291,7 +291,7 @@ class JarPublish(JarTask, ScmPublish):
 
   @classmethod
   def setup_parser(cls, option_group, args, mkflag):
-    super(JarTask, cls).setup_parser(option_group, args, mkflag)
+    super(JarPublish, cls).setup_parser(option_group, args, mkflag)
 
     # TODO(John Sirois): Support a preview mode that outputs a file with entries like:
     # artifact id:
@@ -361,11 +361,10 @@ class JarPublish(JarTask, ScmPublish):
   def __init__(self, context, workdir, scm=None):
     super(JarPublish, self).__init__(context, workdir)
     ScmPublish.__init__(self, scm or get_scm(),
-                        self.context.config.getlist(
-                          JarPublish._CONFIG_SECTION, 'restrict_push_branches'))
+                        self.context.config.getlist(self._CONFIG_SECTION, 'restrict_push_branches'))
     self.cachedir = os.path.join(self.workdir, 'cache')
 
-    self._jvmargs = context.config.getlist(JarPublish._CONFIG_SECTION, 'ivy_jvmargs', default=[])
+    self._jvmargs = context.config.getlist(self._CONFIG_SECTION, 'ivy_jvmargs', default=[])
 
     if context.options.jar_publish_local:
       local_repo = dict(
@@ -378,7 +377,7 @@ class JarPublish(JarTask, ScmPublish):
       self.commit = False
       self.snapshot = context.options.jar_publish_local_snapshot
     else:
-      self.repos = context.config.getdict(JarPublish._CONFIG_SECTION, 'repos')
+      self.repos = context.config.getdict(self._CONFIG_SECTION, 'repos')
       if not self.repos:
         raise TaskError("This repo is not yet set for publishing to the world!"
                         "Please re-run with --publish-local")
@@ -395,7 +394,6 @@ class JarPublish(JarTask, ScmPublish):
       self.snapshot = False
 
     self.ivycp = context.config.getlist('ivy', 'classpath')
-    self.ivysettings = context.config.get('jar-publish', 'ivy_settings')
 
     self.dryrun = context.options.jar_publish_dryrun
     self.transitive = context.options.jar_publish_transitive
@@ -445,7 +443,7 @@ class JarPublish(JarTask, ScmPublish):
 
   @property
   def config_section(self):
-    return JarPublish._CONFIG_SECTION
+    return self._CONFIG_SECTION
 
   def prepare(self, round_manager):
     round_manager.require('jars')
@@ -599,7 +597,12 @@ class JarPublish(JarTask, ScmPublish):
 
           # Do the publish
           def publish(ivyxml_path):
-            ivysettings = self.generate_ivysettings(published, publish_local=path)
+            try:
+              ivy = Bootstrapper.default_ivy()
+            except Bootstrapper.Error as e:
+              raise TaskError('Failed to push %s! %s' % (jar_coordinate(jar, newver.version()), e))
+
+            ivysettings = self.generate_ivysettings(ivy, published, publish_local=path)
             args = [
               '-settings', ivysettings,
               '-ivy', ivyxml_path,
@@ -618,10 +621,9 @@ class JarPublish(JarTask, ScmPublish):
               args.append('-overwrite')
 
             try:
-              ivy = Bootstrapper.default_ivy()
               ivy.execute(jvm_options=jvm_args, args=args,
                           workunit_factory=self.context.new_workunit, workunit_name='jar-publish')
-            except (Bootstrapper.Error, Ivy.Error) as e:
+            except Ivy.Error as e:
               raise TaskError('Failed to push %s! %s' % (jar_coordinate(jar, newver.version()), e))
 
           publish(ivyxml)
@@ -747,12 +749,15 @@ class JarPublish(JarTask, ScmPublish):
     return self.scm.changelog(from_commit=sha,
                               files=target.sources_relative_to_buildroot())
 
-  def generate_ivysettings(self, publishedjars, publish_local=None):
+  def generate_ivysettings(self, ivy, publishedjars, publish_local=None):
+    if ivy.ivy_settings is None:
+      raise TaskError('A custom ivysettings.xml with writeable resolvers is required for'
+                      'publishing, but none was configured.')
     template_relpath = os.path.join('templates', 'jar_publish', 'ivysettings.mustache')
     template = pkgutil.get_data(__name__, template_relpath)
     with safe_open(os.path.join(self.workdir, 'ivysettings.xml'), 'w') as wrapper:
       generator = Generator(template,
-                            ivysettings=self.ivysettings,
+                            ivysettings=ivy.ivy_settings,
                             dir=self.workdir,
                             cachedir=self.cachedir,
                             published=[TemplateData(org=jar.org, name=jar.name)

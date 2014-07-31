@@ -9,10 +9,14 @@ import errno
 import sys
 from contextlib import contextmanager
 
-from pants.backend.core.tasks.task import Task
+from pants.backend.core.tasks.task import QuietTaskMixin, Task
 
 
-class ConsoleTask(Task):
+class ConsoleTask(Task, QuietTaskMixin):
+  """A task whose only job is to print information to the console.
+
+  ConsoleTasks are not intended to modify build state.
+  """
   @classmethod
   def register_options(cls, registry):
     registry.register('--sep', default='\\n', metavar='<separator>',

@@ -5,10 +5,12 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
+from collections import defaultdict
 from contextlib import contextmanager
 import inspect
 import logging
 import os
+import re
 import sys
 import traceback
 
@@ -17,13 +19,12 @@ from twitter.common.collections import OrderedSet
 from twitter.common.lang import Compatibility
 from twitter.common.log.options import LogOptions
 
-from pants.backend.core.tasks.console_task import ConsoleTask
-from pants.backend.core.tasks.task import Task
+from pants.backend.core.tasks.task import QuietTaskMixin, Task
 from pants.backend.jvm.tasks.nailgun_task import NailgunTask  # XXX(pl)
 from pants.base.build_environment import get_buildroot
 from pants.base.build_file import BuildFile
-from pants.base.config import Config
 from pants.base.cmd_line_spec_parser import CmdLineSpecParser
+from pants.base.config import Config
 from pants.base.rcfile import RcFile
 from pants.base.workunit import WorkUnit
 from pants.commands.command import Command
@@ -31,9 +32,9 @@ from pants.engine.engine import Engine
 from pants.engine.round_engine import RoundEngine
 from pants.goal.context import Context
 from pants.goal.goal import GoalError
-from pants.goal.phase import Phase
 from pants.goal.initialize_reporting import update_reporting
 from pants.goal.option_helpers import add_global_options
+from pants.goal.phase import Phase
 from pants.option.options import Options
 from pants.util.dirutil import safe_mkdir
 
@@ -242,23 +243,57 @@ class Goal(Command):
         log.init()
 
     # Update the reporting settings, now that we have flags etc.
-    def is_console_task():
+    def is_quiet_task():
       for phase in self.phases:
         for goal in phase.goals():
-          if issubclass(goal.task_type, ConsoleTask):
+          if issubclass(goal.task_type, QuietTaskMixin):
             return True
       return False
 
+    # Target specs are mapped to the patterns which match them, if any. This variable is a key for
+    # specs which don't match any exclusion regexes. We know it won't already be in the list of
+    # patterns, because the asterisks in its name make it an invalid regex.
+    _UNMATCHED_KEY = '** unmatched **'
+
+    def targets_by_pattern(targets, patterns):
+      mapping = defaultdict(list)
+      for target in targets:
+        matched_pattern = None
+        for pattern in patterns:
+          if re.search(pattern, target.address.spec) is not None:
+            matched_pattern = pattern
+            break
+        if matched_pattern is None:
+          mapping[_UNMATCHED_KEY].append(target)
+        else:
+          mapping[matched_pattern].append(target)
+      return mapping
+
     is_explain = self.options.explain
-    update_reporting(self.options, is_console_task() or is_explain, self.run_tracker,
+    update_reporting(self.options, is_quiet_task() or is_explain, self.run_tracker,
                      self.options.logdir)
 
+    if self.options.target_excludes:
+      excludes = self.options.target_excludes
+      log.debug('excludes:\n  {excludes}'.format(excludes='\n  '.join(excludes)))
+      by_pattern = targets_by_pattern(self.targets, excludes)
+      self.targets = by_pattern[_UNMATCHED_KEY]
+      # The rest of this if-statement is just for debug logging.
+      log.debug('Targets after excludes: {targets}'.format(
+          targets=', '.join(t.address.spec for t in self.targets)))
+      excluded_count = sum(len(by_pattern[p]) for p in excludes)
+      log.debug('Excluded {count} target{plural}.'.format(count=excluded_count,
+          plural=('s' if excluded_count != 1 else '')))
+      for pattern in excludes:
+        log.debug('Targets excluded by pattern {pattern}\n  {targets}'.format(pattern=pattern,
+            targets='\n  '.join(t.address.spec for t in by_pattern[pattern])))
+
     context = Context(
-      self.config,
-      self.options,
-      self._new_options,
-      self.run_tracker,
-      self.targets,
+      config=self.config,
+      options=self.options,
+      new_options=self._new_options,
+      run_tracker=self.run_tracker,
+      target_roots=self.targets,
       requested_goals=self.requested_goals,
       build_graph=self.build_graph,
       build_file_parser=self.build_file_parser,

@@ -113,6 +113,8 @@ python_tests(
   name = 'jvm_bundle_integration',
   sources = ['test_jvm_bundle_integration.py'],
   dependencies = [
+    pants('src/python/pants/fs'),
+    pants('src/python/pants/util:contextutil'),
     pants('tests/python/pants_test:int-test'),
   ],
 )
@@ -495,10 +497,11 @@ python_tests(
   dependencies = [
     pants('src/python/pants/backend/core/tasks:check_exclusives'),
     pants('src/python/pants/backend/core/tasks:group_task'),
-    pants('src/python/pants/engine:engine'),
     pants('src/python/pants/backend/jvm/targets:java'),
     pants('src/python/pants/backend/jvm/targets:scala'),
     pants('src/python/pants/backend/python/targets:python'),
+    pants('src/python/pants/base:target'),
+    pants('src/python/pants/engine:engine'),
     pants('tests/python/pants_test:base_test'),
   ]
 )
