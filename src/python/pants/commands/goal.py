@@ -181,21 +181,7 @@ class Goal(Command):
     non_help_args = filter(lambda f: f not in help_flags, args)
 
     goals, specs = Goal.parse_args(non_help_args)
-    if show_help:
-      self._new_options.print_help(phases=goals, legacy=True)
-      #print_help(goals)
-      sys.exit(0)
-
     self.requested_goals = goals
-
-    with self.run_tracker.new_workunit(name='setup', labels=[WorkUnit.SETUP]):
-      # Bootstrap user goals by loading any BUILD files implied by targets.
-      spec_parser = CmdLineSpecParser(self.root_dir, self.build_file_parser)
-      with self.run_tracker.new_workunit(name='parse', labels=[WorkUnit.SETUP]):
-        for address in spec_parser.parse_addresses(specs):
-          self.build_file_parser.inject_spec_closure_into_build_graph(address.spec,
-                                                                      self.build_graph)
-          self.targets.append(self.build_graph.get_target(address))
     self.phases = [Phase(goal) for goal in goals]
 
     rcfiles = self.config.getdefault('rcfiles', type=list,
@@ -226,6 +212,20 @@ class Goal(Command):
         sys.stderr.write("(using pantsrc expansion: pants goal %s)\n" % ' '.join(augmented_args))
 
     Phase.setup_parser(parser, args, self.phases)
+
+    if show_help:
+      all_phases = OrderedSet([phase.name for phase in Engine.execution_order(self.phases)])
+      self._new_options.print_help(phases=all_phases, legacy=True)
+      sys.exit(0)
+
+    with self.run_tracker.new_workunit(name='setup', labels=[WorkUnit.SETUP]):
+      # Bootstrap user goals by loading any BUILD files implied by targets.
+      spec_parser = CmdLineSpecParser(self.root_dir, self.build_file_parser)
+      with self.run_tracker.new_workunit(name='parse', labels=[WorkUnit.SETUP]):
+        for address in spec_parser.parse_addresses(specs):
+          self.build_file_parser.inject_spec_closure_into_build_graph(address.spec,
+                                                                      self.build_graph)
+          self.targets.append(self.build_graph.get_target(address))
 
   def run(self, lock):
     # TODO(John Sirois): Consider moving to straight python logging.  The divide between the

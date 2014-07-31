@@ -124,7 +124,7 @@ class Parser(object):
     if inverse_args:
       inverse_kwargs = self._create_inverse_kwargs(clean_kwargs)
       if self._legacy_options:
-        self._legacy_options.register(inverse_args, inverse_kwargs)
+        self._legacy_options.register(inverse_args, inverse_kwargs, legacy_dest)
       self._register_boolean(dest, args, clean_kwargs, inverse_args, inverse_kwargs)
     else:
       self._register(dest, args, clean_kwargs)

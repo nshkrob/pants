@@ -161,12 +161,10 @@ class Options(object):
         if not phase.goals():
           print('\nUnknown goal: %s' % phase_name)
         else:
-          print('\n%s options:' % phase.name)
           print(self.format_help('%s' % phase.name, legacy=legacy))
           for goal in phase.goals():
             if goal.name != phase.name:  # Otherwise we registered on the phase scope.
               scope = '%s.%s' % (phase.name, goal.name)
-              print('\n%s options:' % scope)
               print(self.format_help(scope, legacy=legacy))
     else:
       print(pants_release())

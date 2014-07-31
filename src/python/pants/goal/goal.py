@@ -100,7 +100,7 @@ class Goal(object):
     """Allows a task to add its command line args to the global specification."""
     namespace = self._namespace_for_parser(phase)
     mkflag = Mkflag(*namespace)
-    option_group = OptionGroup(parser, title=':'.join(namespace))
+    option_group = OptionGroup(parser, title='.'.join(namespace))
     self.task_setup_parser(option_group, args, mkflag)
     if option_group.option_list:
       parser.add_option_group(option_group)

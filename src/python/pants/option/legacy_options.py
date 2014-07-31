@@ -6,7 +6,7 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
                         print_function, unicode_literals)
 
 import copy
-from optparse import IndentedHelpFormatter, OptionGroup
+from optparse import OptionGroup
 
 
 class LegacyOptionsError(Exception):
@@ -42,7 +42,9 @@ class LegacyOptions(object):
       # we perform necessary adjustments here.
       optparse_args = []
       for arg in legacy_args or args:
-        if arg.startswith('--'):
+        if arg.startswith('--no-'):
+          optparse_args.append('--no-%s-%s' % (self._scope_prefix, arg[5:]))
+        elif arg.startswith('--'):
           optparse_args.append('--%s-%s' % (self._scope_prefix, arg[2:]))
         elif arg.startswith('-'):
           if self._scope_prefix == '':
@@ -82,4 +84,3 @@ class LegacyOptions(object):
       return self._optparser_group.format_help(self._optparser.formatter)
     else:
       return ''
-    
