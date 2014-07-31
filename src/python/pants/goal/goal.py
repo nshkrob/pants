@@ -90,7 +90,7 @@ class Goal(object):
     return self._task
 
   def _namespace_for_parser(self, phase):
-    phase_leader = phase.goals() == [self] or self.name == phase.name
+    phase_leader = self.name == phase.name
     return [self.name] if phase_leader else [phase.name, self.name]
 
   def title_for_option_group(self, phase):
