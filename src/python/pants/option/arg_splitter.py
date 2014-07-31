@@ -20,7 +20,7 @@ class ArgSplitter(object):
   ./pants goal -x compile --foo compile.java -y target1 target2
   ./pants -x compile --foo compile.java -y -- target1 target2
 
-  Special-cases help flags.
+  Handles help flags (-h, --help and the scope 'help') specially.
   """
   def __init__(self, known_scopes):
     self._known_scopes = set(known_scopes + ['help'])
@@ -45,10 +45,11 @@ class ArgSplitter(object):
 
     self._unconsumed_args = list(reversed(sys.argv if args is None else args))[:-1]
     if self._unconsumed_args and self._unconsumed_args[-1] == 'goal':
-      print("WARNING: Specifying 'goal' is superfluous and deprecated.")
+      # TODO: Temporary warning. Eventually specifying 'goal' will be an error.
+      print("WARNING: Specifying the 'goal' command explicitly is superfluous and deprecated.")
       self._unconsumed_args.pop()
+    # The 'new' command is a temporary hack during migration.
     if self._unconsumed_args and self._unconsumed_args[-1] == 'new':
-      # Temporary hack during migration.
       self._unconsumed_args.pop()
 
     global_flags = self._consume_flags()
