@@ -56,6 +56,7 @@ class Parser(object):
     # The argparser we use for formatting help messages.
     self._help_argparser = CustomArgumentParser(conflict_handler='resolve',
                                                 formatter_class=PantsHelpFormatter)
+    self._has_help_options = False
 
     self._dest_forwardings = {}  # arg to dest.
     self._parent_parser = parent_parser  # A Parser instance, or None for the global scope parser.
@@ -76,7 +77,7 @@ class Parser(object):
     if legacy:
       return self._legacy_options.format_help()
     else:
-      return self._help_argparser.format_help()
+      return self._help_argparser.format_help() if self._has_help_options else ''
 
   def register(self, *args, **kwargs):
     """Register an option, using argparse params."""
@@ -115,6 +116,7 @@ class Parser(object):
     raw_default = self._compute_default(dest, clean_kwargs).value
     clean_kwargs_with_default = dict(clean_kwargs, default=raw_default)
     self._help_argparser.add_argument(*help_args, **clean_kwargs_with_default)
+    self._has_help_options = True
 
     # We register legacy options only in this scope.
     if self._legacy_options:

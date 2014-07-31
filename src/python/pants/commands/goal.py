@@ -156,10 +156,6 @@ class Goal(Command):
       known_scopes.append(phase.name)
       for goal in goals:
         known_scopes.append('%s.%s' % (phase.name, goal.name))
-    self._new_options = Options(env=None, config=None, known_scopes=known_scopes, args=[],
-                                legacy_parser=parser)
-    self._register_new_options()
-
     add_global_options(parser)
 
     # We support attempting zero or more goals.  Multiple goals must be delimited from further
@@ -209,10 +205,12 @@ class Goal(Command):
         # once the 2-layer of command -> goal is squashed into one.
         del args[:]
         args.extend(augmented_args)
-        sys.stderr.write("(using pantsrc expansion: pants goal %s)\n" % ' '.join(augmented_args))
+        sys.stderr.write('(using pantsrc expansion: pants goal %s)\n' % ' '.join(augmented_args))
 
     Phase.setup_parser(parser, args, self.phases)
-
+    self._new_options = Options(env=None, config=None, known_scopes=known_scopes, args=[],
+                                legacy_parser=parser)
+    self._register_new_options()
     if show_help:
       all_phases = OrderedSet([phase.name for phase in Engine.execution_order(self.phases)])
       self._new_options.print_help(phases=all_phases, legacy=True)

@@ -161,11 +161,11 @@ class Options(object):
         if not phase.goals():
           print('\nUnknown goal: %s' % phase_name)
         else:
-          print(self.format_help('%s' % phase.name, legacy=legacy))
+          _maybe_print(self.format_help('%s' % phase.name, legacy=legacy))
           for goal in phase.goals():
             if goal.name != phase.name:  # Otherwise we registered on the phase scope.
               scope = '%s.%s' % (phase.name, goal.name)
-              print(self.format_help(scope, legacy=legacy))
+              _maybe_print(self.format_help(scope, legacy=legacy))
     else:
       print(pants_release())
       print('\nUsage:')
@@ -185,3 +185,8 @@ class Options(object):
 
     if msg is not None:
       print(msg)
+
+def _maybe_print(s):
+  """Avoid superfluous blank lines for empty strings."""
+  if s != '':
+    print(s)
