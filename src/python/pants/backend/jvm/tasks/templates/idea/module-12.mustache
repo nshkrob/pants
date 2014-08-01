@@ -30,36 +30,21 @@ Licensed under the Apache License, Version 2.0 (see LICENSE).
   <component name="NewModuleRootManager" inherit-compiler-output="true">
     <exclude-output/>
 
-    <content url="file://{{module.root_dir}}">
-    {{#module.content_roots}}
+  {{#module.content_roots}}
       {{#sources}}
-        {{#package_prefix}}
-      <sourceFolder url="file://{{module.root_dir}}/{{path}}"
-                    isTestSource="{{is_test}}"
-                    packagePrefix="{{.}}"/>
-        {{/package_prefix}}
-        {{^package_prefix}}
-      <sourceFolder url="file://{{module.root_dir}}/{{path}}"
-                    isTestSource="{{is_test}}"/>
-        {{/package_prefix}}
-      {{/sources}}
-    {{/module.content_roots}}
-    {{#module.content_roots}}
-      {{#exclude_paths}}
-      <excludeFolder url="file://{{module.root_dir}}/{{.}}"/>
-      {{/exclude_paths}}
-    {{/module.content_roots}}
-      <excludeFolder url="file://$MODULE_DIR$/external-libs" />
-      <excludeFolder url="file://$MODULE_DIR$/external-libsources" />
-      <excludeFolder url="file://$MODULE_DIR$/internal-libs" />
-      <excludeFolder url="file://$MODULE_DIR$/internal-libsources" />
-      # TODO(Garrett Malmquist): Do this in a generic way, rather than hard-coding particular
-      # directories.
-      <excludeFolder url="file://${module.root_dir}/.pants.d/compile" />
-      <excludeFolder url="file://${module.root_dir}/.pants.d/ivy" />
-      <excludeFolder url="file://${module.root_dir}/.pants.d/python" />
-      <excludeFolder url="file://${module.root_dir}/.pants.d/resources" />
+    <content url="file://{{module.root_dir}}/{{path}}">
+        <sourceFolder url="file://{{module.root_dir}}/{{path}}"
+                      isTestSource="{{is_test}}"
+                      packagePrefix="{{package_prefix}}"/>
+        {{#exclude_paths}}
+        <excludeFolder url="file://{{module.root_dir}}/{{.}}"/>
+        {{/exclude_paths}}
     </content>
+      {{/sources}}
+  {{/module.content_roots}}
+
+
+
 
     <orderEntry type="inheritedJdk"/>
     <orderEntry type="sourceFolder" forTests="false"/>
