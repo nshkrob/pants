@@ -23,11 +23,11 @@ class OptionError(Exception):
 class Options(object):
   """The outward-facing API for interacting with options.
 
-  Supports option registration and reading option values.
+  Supports option registration and fetching option values.
 
   Examples:
 
- The value in global scope of option 'foo_bar' (registered in global scope) will be selected
+ The value in global scope of option '--foo-bar' (registered in global scope) will be selected
  in the following order:
     - The value of the --foo-bar flag in global scope.
     - The value of the PANTS_DEFAULT_FOO_BAR environment variable.
@@ -35,34 +35,43 @@ class Options(object):
     - The hard-coded value provided at registration time.
     - None.
 
-  The value in scope 'sco.pe' of option 'foo_bar' (registered in global scope) will be selected
-  in the following order:
-    - The value of the --foo-bar flag in scope 'sco.pe'.
-    - The value of the --foo-bar flag in scope 'sco'.
+  The value in scope 'compile.java' of option '--foo-bar' (registered in global scope) will be
+  selected in the following order:
+    - The value of the --foo-bar flag in scope 'compile.java'.
+    - The value of the --foo-bar flag in scope 'compile'.
     - The value of the --foo-bar flag in global scope.
-    - The value of the PANTS_SCO_PE_FOO_BAR environment variable.
-    - The value of the PANTS_SCO_FOO_BAR environment variable.
+    - The value of the PANTS_COMPILE_JAVA_FOO_BAR environment variable.
+    - The value of the PANTS_COMPILE_FOO_BAR environment variable.
     - The value of the PANTS_DEFAULT_FOO_BAR environment variable.
-    - The value of the foo_bar key in the [sco.pe] section of pants.ini.
-    - The value of the foo_bar key in the [sco] section of pants.ini.
+    - The value of the foo_bar key in the [compile.java] section of pants.ini.
+    - The value of the foo_bar key in the [compile] section of pants.ini.
     - The value of the foo_bar key in the [DEFAULT] section of pants.ini.
     - The hard-coded value provided at registration time.
     - None.
 
-  The value in scope 'sco.pe' of option 'foo_bar' (registered in scope 'sco') will be selected
-  in the following order:
-    - The value of the --foo-bar flag in scope 'sco.pe'.
-    - The value of the --foo-bar flag in scope 'sco'.
-    - The value of the PANTS_SCO_PE_FOO_BAR environment variable.
-    - The value of the PANTS_SCO_FOO_BAR environment variable.
-    - The value of the foo_bar key in the [sco.pe] section of pants.ini.
-    - The value of the foo_bar key in the [sco] section of pants.ini.
+  The value in scope 'compile.java' of option '--foo-bar' (registered in scope 'compile') will be
+  selected in the following order:
+    - The value of the --foo-bar flag in scope 'compile.java'.
+    - The value of the --foo-bar flag in scope 'compile'.
+    - The value of the PANTS_COMPILE_JAVA_FOO_BAR environment variable.
+    - The value of the PANTS_COMPILE_FOO_BAR environment variable.
+    - The value of the foo_bar key in the [compile.java] section of pants.ini.
+    - The value of the foo_bar key in the [compile] section of pants.ini.
     - The value of the foo_bar key in the [DEFAULT] section of pants.ini
       (because of automatic config file fallback to that section).
     - The hard-coded value provided at registration time.
     - None.
   """
   def __init__(self, env, config, known_scopes, args=sys.argv, legacy_parser=None):
+    """Create an Options instance.
+
+    :param env: a dict of environment variables.
+    :param config: data from a config file (must support config.get(section, name, default=)).
+    :param known_scopes: a list of all possible scopes that may be encountered.
+    :param args: the cmd-line args.
+    :param legacy_parser: optional instance of optparse.OptionParser, used to register and access
+           the old-style flags during migration.
+    """
     splitter = ArgSplitter(known_scopes)
     self._scope_to_flags, self._target_specs = splitter.split_args(args)
     self._is_help = splitter.is_help
@@ -89,37 +98,32 @@ class Options(object):
     return self._is_help
 
   def set_legacy_values(self, legacy_values):
+    """Override the values with those parsed from legacy flags."""
     self._legacy_values = legacy_values
 
   def format_global_help(self, legacy=False):
+    """Generate a help message for global options."""
     return self.get_global_parser().format_help(legacy=legacy)
 
   def format_help(self, scope, legacy=False):
+    """Generate a help message for options at the specified scope."""
     return self.get_parser(scope).format_help(legacy=legacy)
-
-  def register_global(self, *args, **kwargs):
-    """Register an option in the global scope, using argparse params."""
-    self.register('', *args, **kwargs)
-
-  def get_global_parser(self):
-    """Returns the parser for the given scope, so code can register on it directly."""
-    return self.get_parser('')
-
-  def get_parser(self, scope):
-    """Returns the parser for the given scope, so code can register on it directly."""
-    return self._parser_hierarchy.get_parser_by_scope(scope)
 
   def register(self, scope, *args, **kwargs):
     """Register an option in the given scope, using argparse params."""
     self.get_parser(scope).register(*args, **kwargs)
 
-  def for_global_scope(self):
-    """Return the option values for the global scope.
+  def register_global(self, *args, **kwargs):
+    """Register an option in the global scope, using argparse params."""
+    self.register('', *args, **kwargs)
 
-    Values are attributes of the returned object, e.g., options.foo.
-    Computed lazily.
-    """
-    return self.for_scope('')
+  def get_parser(self, scope):
+    """Returns the parser for the given scope, so code can register on it directly."""
+    return self._parser_hierarchy.get_parser_by_scope(scope)
+
+  def get_global_parser(self):
+    """Returns the parser for the global scope, so code can register on it directly."""
+    return self.get_parser('')
 
   def for_scope(self, scope):
     """Return the option values for the given scope.
@@ -149,11 +153,19 @@ class Options(object):
       self.print_help(str(e))
       sys.exit(1)
 
+  def for_global_scope(self):
+    """Return the option values for the global scope."""
+    return self.for_scope('')
+
   def print_help(self, msg=None, phases=None, legacy=False):
     """Print a help screen, followed by an optional message.
 
     Note: Ony useful if called after options have been registered.
     """
+    def _maybe_print(s):
+      if s != '':  # Avoid superfluous blank lines for empty strings.
+        print(s)
+
     phases = phases or self.phases
     if phases:
       for phase_name in phases:
@@ -185,8 +197,3 @@ class Options(object):
 
     if msg is not None:
       print(msg)
-
-def _maybe_print(s):
-  """Avoid superfluous blank lines for empty strings."""
-  if s != '':
-    print(s)
