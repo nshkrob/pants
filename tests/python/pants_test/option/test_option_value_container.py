@@ -46,9 +46,13 @@ class OptionValueContainerTest(unittest.TestCase):
     # copy semantics can get hairy when overriding __setattr__/__getattr__, so we test them.
     o = OptionValueContainer()
     o.add_forwardings({'foo': 'bar'})
+    o.add_forwardings({'baz': 'qux'})
     o.bar = 1
+    o.qux = { 'a': 111 }
     p = copy.copy(o)
+    o.baz['b'] = 222  # Add to original dict.
     self.assertEqual(1, p.foo)
+    self.assertEqual({ 'a': 111, 'b': 222 }, p.baz)  # Ensure dict was not copied.
 
   def test_deepcopy(self):
     # deepcopy semantics can get hairy when overriding __setattr__/__getattr__, so we test them.

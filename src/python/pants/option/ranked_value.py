@@ -46,6 +46,14 @@ class RankedValue(object):
   ENVIRONMENT = 3  # The value from the appropriately-named environment variable.
   FLAG = 4  # The value from the appropriately-named command-line flag.
 
+  _RANK_NAMES = {
+    NONE: 'NONE',
+    HARDCODED: 'HARDCODED',
+    CONFIG: 'CONFIG',
+    ENVIRONMENT: 'ENVIRONMENT',
+    FLAG: 'FLAG'
+  }
+
   @classmethod
   def choose(cls, flag_val, env_val, config_val, hardcoded_val):
     """Return the highest-ranked non-None value, wrapped in a RankedValue instance."""
@@ -76,4 +84,4 @@ class RankedValue(object):
     return self._rank == self._rank and self._value == self._value
 
   def __repr__(self):
-    return '(%s, %s)' % (self._rank, self._value)
+    return '(%s, %s)' % (self._RANK_NAMES.get(self._rank, 'UNKNOWN'), self._value)

@@ -30,8 +30,8 @@ class OptionValueContainer(object):
      the re-registered option to _COMPILE_foo__, and then have the 'f' and 'foo' attributes
      forward, appropriately.
 
-     Note that forwarding is only for reading. The target of the forward must be written to
-     directly. If the source attribute is set directly, this overrides any forwarding.
+     Note that only reads are forwarded. The target of the forward must be written to directly.
+     If the source attribute is set directly, this overrides any forwarding.
 
   2) Value ranking.
 
@@ -72,7 +72,7 @@ class OptionValueContainer(object):
       if isinstance(existing_value, RankedValue):
         existing_rank = existing_value.rank
       else:
-        # Values without rank are assumed to be flag values set by parse_args().
+        # Values without rank are assumed to be flag values set by argparse.
         existing_rank = RankedValue.FLAG
     else:
       existing_rank = RankedValue.NONE
@@ -80,20 +80,20 @@ class OptionValueContainer(object):
     if isinstance(value, RankedValue):
       new_rank = value.rank
     else:
-      # Values without rank are assumed to be flag values set by parse_args().
+      # Values without rank are assumed to be flag values set by argparse.
       new_rank = RankedValue.FLAG
 
     if new_rank >= existing_rank:
       # We set values from outer scopes before values from inner scopes, so
-      # in case of equal rank we overwrite, so that the inner scope value wins.
+      # in case of equal rank we overwrite. That way that the inner scope value wins.
       super(OptionValueContainer, self).__setattr__(key, value)
 
   def __getattr__(self, key):
     # Note: Called only if regular attribute lookup fails, so accesses
     # to non-forwarded attributes will be handled the normal way.
 
-    # In case we get called in copy/deepcopy, which don't invoke the ctor.
     if key == '_forwardings':
+      # In case we get called in copy/deepcopy, which don't invoke the ctor.
       raise AttributeError
     if key not in self._forwardings:
       raise AttributeError('No such forwarded attribute: %s' % key)
