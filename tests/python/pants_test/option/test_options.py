@@ -9,7 +9,6 @@ import shlex
 import unittest
 
 import pytest
-from twitter.common.lang import Compatibility
 
 from pants.option.options import Options
 
@@ -42,9 +41,8 @@ class OptionsTest(unittest.TestCase):
     options.register('compile', '--c', type=int)
     options.register('compile.java', '--b', type=str, default='foo')
 
-  def _parse(self, args, env=None, config=None):
-    if isinstance(args, Compatibility.string):
-      args = shlex.split(str(args))
+  def _parse(self, args_str, env=None, config=None):
+    args = shlex.split(str(args_str))
     options = Options(env or {}, config or OptionsTest.FakeConfig({}),
                       OptionsTest._known_scopes, args)
     self._register(options)
