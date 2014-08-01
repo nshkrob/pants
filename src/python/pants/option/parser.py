@@ -43,7 +43,7 @@ class Parser(object):
   re-registering the same option name on an inner scope correctly replaces the identically-named
   option from the outer scope.
 
-  This object can also interact with the legacy flags system.
+  For migration purposes, this object also interacts with the legacy flags system:
 
   Recall that the old flags system uses optparse, and scopes the flags using a prefix, e.g.,
   ./pants --compile-scala-foo.
@@ -51,11 +51,9 @@ class Parser(object):
   Whereas  this new system uses argparse and scopes the flags using command-line context, e.g.,
   ./pants compile.scala --foo.
 
-  When registering (scala.compile, --foo), this object can convert this to --scala-compile-foo
-  and also register it on the old system.  This allows us to transition registration code
-  to the new registration API while retaining the old flag names.
-
-  We also forward the
+  When registering (scala.compile, --foo), this object can also register it as --scala-compile-foo
+  on the old system.  This allows us to transition registration code to the new registration API
+  while retaining the old flag names.
 
   Eventually all usages will switch to the new flag names, and we can remove this migration code.
 
@@ -70,21 +68,35 @@ class Parser(object):
     self._env = env
     self._config = config
     self._scope = scope
-    self._frozen = False  # If True, no more registration is allowed on this parser.
+
+    # If True, no more registration is allowed on this parser.
+    self._frozen = False
+
     # The argparser we use for actually parsing args.
     self._argparser = CustomArgumentParser(conflict_handler='resolve')
 
     # The argparser we use for formatting help messages.
+    # We don't use self._argparser for this as it will have all options from enclosing scopes
+    # registered on it too, which would create unnecessarily repetitive help messages.
     self._help_argparser = CustomArgumentParser(conflict_handler='resolve',
                                                 formatter_class=PantsHelpFormatter)
+
+    # If True, we have at least one option to show help for.
     self._has_help_options = False
 
-    self._dest_forwardings = {}  # arg to dest.
-    self._parent_parser = parent_parser  # A Parser instance, or None for the global scope parser.
-    self._child_parsers = []  # List of Parser instances.
+    # Map of external to internal dest names. See docstring for _set_dest below.
+    self._dest_forwardings = {}
+
+    # A Parser instance, or None for the global scope parser.
+    self._parent_parser = parent_parser
+
+    # List of Parser instances.
+    self._child_parsers = []
+
     if self._parent_parser:
       self._parent_parser._child_parsers.append(self)
 
+    # Handles legacy options on our behalf.
     self._legacy_options = LegacyOptions(scope, legacy_parser) if legacy_parser else None
 
   def parse_args(self, args, namespace):
@@ -95,7 +107,7 @@ class Parser(object):
     return namespace
 
   def format_help(self, legacy=False):
-    """Return a help message for the flags registered on this object."""
+    """Return a help message for the options registered on this object."""
     if legacy:
       return self._legacy_options.format_help()
     else:
@@ -106,6 +118,7 @@ class Parser(object):
     if self._frozen:
       raise RegistrationError('Cannot register option %s in scope %s after registering options '
                               'in any of its inner scopes.' % (args[0], self._scope))
+
     # Prevent further registration in enclosing scopes.
     ancestor = self._parent_parser
     while ancestor:
@@ -132,7 +145,7 @@ class Parser(object):
       inverse_args = None
       help_args = args
 
-    # For help formatting we register only in this scope.
+    # Register the option for displaying help.
     # Note that we'll only display the default value for the scope in which
     # we registered, even though the default may be overridden in inner scopes.
     raw_default = self._compute_default(dest, clean_kwargs).value
@@ -140,11 +153,11 @@ class Parser(object):
     self._help_argparser.add_argument(*help_args, **clean_kwargs_with_default)
     self._has_help_options = True
 
-    # We register legacy options only in this scope.
-    if self._legacy_options:
+    # Also register the option as a legacy option, if needed.
+    if self._legacy_options and legacy_dest:
       self._legacy_options.register(args, clean_kwargs_with_default, legacy_dest)
 
-    # For parsing we register on this and all enclosed scopes.
+    # Register the option for parsing, on this and all enclosed scopes.
     if inverse_args:
       inverse_kwargs = self._create_inverse_kwargs(clean_kwargs)
       if self._legacy_options:
@@ -154,14 +167,17 @@ class Parser(object):
       self._register(dest, args, clean_kwargs)
 
   def _register(self, dest, args, kwargs):
+    """Recursively register the option for parsing."""
     ranked_default = self._compute_default(dest, kwargs)
     kwargs_with_default = dict(kwargs, default=ranked_default)
     self._argparser.add_argument(*args, **kwargs_with_default)
+
     # Propagate registration down to inner scopes.
     for child_parser in self._child_parsers:
       child_parser._register(dest, args, kwargs)
 
   def _register_boolean(self, dest, args, kwargs, inverse_args, inverse_kwargs):
+    """Recursively register the boolean option, and its inverse, for parsing."""
     group = self._argparser.add_mutually_exclusive_group()
     ranked_default = self._compute_default(dest, kwargs)
     kwargs_with_default = dict(kwargs, default=ranked_default)
@@ -173,6 +189,7 @@ class Parser(object):
       child_parser._register_boolean(dest, args, kwargs, inverse_args, inverse_kwargs)
 
   def _validate(self, args, kwargs):
+    """Ensure that the caller isn't trying to use unsupported argparse features."""
     for k in ['nargs', 'required']:
       if k in kwargs:
         raise RegistrationError('%s unsupported in registration of option %s.' % (k, args))
@@ -188,7 +205,7 @@ class Parser(object):
 
     Note: Modfies kwargs.
     """
-    dest = self._infer_dest(args, kwargs)
+    dest = self._select_dest(args, kwargs)
     scoped_dest = '_%s_%s__' % (self._scope or 'DEFAULT', dest)
 
     # Make argparse write to the internal dest.
@@ -201,13 +218,20 @@ class Parser(object):
     for arg in args:
       self._dest_forwardings[arg.lstrip('-').replace('-', '_')] = scoped_dest
 
-    if legacy_dest:  # Forward another hop, to the legacy dest.
+    # Forward another hop, to the legacy flag.  Note that this means that *only* the
+    # legacy flag is supported for now.  This will be removed after we're finished migrating
+    # option registration to the new system, and work on migrating the actual runtime
+    # command-line parsing.
+    if legacy_dest:
       self._dest_forwardings[scoped_dest] = legacy_dest
     return dest
 
-  def _infer_dest(self, args, kwargs):
-    # Replicated from the dest inference logic in argparse:
-    # '--foo-bar' -> 'foo_bar' and '-x' -> 'x'.
+  def _select_dest(self, args, kwargs):
+    """Select the dest name for the option.
+
+    Replicated from the dest inference logic in argparse:
+    '--foo-bar' -> 'foo_bar' and '-x' -> 'x'.
+    """
     dest = kwargs.get('dest')
     if dest:
       return dest
@@ -215,7 +239,10 @@ class Parser(object):
     return arg.lstrip('-').replace('-', '_')
 
   def _compute_default(self, dest, kwargs):
-    """Compute the default value to use for an option's registration."""
+    """Compute the default value to use for an option's registration.
+
+    The source of the default value is chosen according to the ranking in RankedValue.
+    """
     config_section = 'DEFAULT' if self._scope == '' else self._scope
     env_var = 'PANTS_%s_%s' % (config_section.upper().replace('.', '_'), dest.upper())
     value_type = kwargs.get('type', str)
@@ -227,6 +254,7 @@ class Parser(object):
     return RankedValue.choose(None, env_val, config_val, hardcoded_val)
 
   def _create_inverse_kwargs(self, kwargs):
+    """Create the kwargs for registering the inverse of a boolean flag."""
     inverse_kwargs = copy.copy(kwargs)
     inverse_action = 'store_true' if kwargs.get('action') == 'store_false' else 'store_false'
     inverse_kwargs['action'] = inverse_action

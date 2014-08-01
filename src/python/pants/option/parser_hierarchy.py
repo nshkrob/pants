@@ -11,11 +11,9 @@ from pants.option.parser import Parser
 class ParserHierarchy(object):
   """A hierarchy of scoped Parser instances.
 
-  A scope is a dotted string: foo.bar. The foo bar encloses the foo.bar scope etc.
-  The empty string represents the global scope.
-
-  We use these scopes to represent phases and tasks.  This structure organizes the
-  Parser instances that know how to parse flags for each phase and task.
+  A scope is a dotted string: E.g., compile.java. In this example the compile.java scope is
+  enclosed in the compile scope, which is enclosed in the global scope (represented by an
+  empty string.)
   """
   def __init__(self, env, config, all_scopes, legacy_parser=None):
     # Sorting ensures that ancestors precede descendants.
