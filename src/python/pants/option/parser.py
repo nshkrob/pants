@@ -24,19 +24,40 @@ class ParseError(Exception):
 
 
 # Standard ArgumentParser prints usage and exists on error. We subclass so we can raise instead.
+# Note that subclassing ArgumentParser for this purpose is allowed by the argparse API.
 class CustomArgumentParser(ArgumentParser):
   def error(self, message):
     raise ParseError(message)
 
 
 class Parser(object):
-  """A parser in a scoped hierarchy.
+  """An argument parser in a hierarchy.
 
-  Options registered on a parser are also registered on all the parsers in inner scopes.
+  Each node in the hierarchy is a 'scope': the root is the global scope, and the parent of
+  a node is the scope it's immediately contained in. E.g., the 'compile.java' scope is
+  a child of the 'compile' scope, which is a child of the global scope.
+
+  Options registered on a parser are also registered transitively on all the scopes it encloses.
   Registration must be in outside-in order: we forbid registering options on an outer scope if
   we've already registered an option on one of its inner scopes. This is to ensure that
-  re-registering the same option name on an inner scope correctly replaces the option inherited
-  from the outer scope.
+  re-registering the same option name on an inner scope correctly replaces the identically-named
+  option from the outer scope.
+
+  This object can also interact with the legacy flags system.
+
+  Recall that the old flags system uses optparse, and scopes the flags using a prefix, e.g.,
+  ./pants --compile-scala-foo.
+
+  Whereas  this new system uses argparse and scopes the flags using command-line context, e.g.,
+  ./pants compile.scala --foo.
+
+  When registering (scala.compile, --foo), this object can convert this to --scala-compile-foo
+  and also register it on the old system.  This allows us to transition registration code
+  to the new registration API while retaining the old flag names.
+
+  We also forward the
+
+  Eventually all usages will switch to the new flag names, and we can remove this migration code.
 
   :param env: a dict of environment variables.
   :param config: data from a config file (must support config.get(section, name, default=)).
@@ -74,6 +95,7 @@ class Parser(object):
     return namespace
 
   def format_help(self, legacy=False):
+    """Return a help message for the flags registered on this object."""
     if legacy:
       return self._legacy_options.format_help()
     else:
@@ -168,14 +190,17 @@ class Parser(object):
     """
     dest = self._infer_dest(args, kwargs)
     scoped_dest = '_%s_%s__' % (self._scope or 'DEFAULT', dest)
+
+    # Make argparse write to the internal dest.
     kwargs['dest'] = scoped_dest
+
+    # Make reads from the external dest forward to the internal one.
     self._dest_forwardings[dest] = scoped_dest
-    # Also forward all option aliases, so there's still a way to reference -x (as options.x)
-    # in the example above.
+
+    # Also forward all option aliases, so we can reference -x (as options.x) in the example above.
     for arg in args:
       self._dest_forwardings[arg.lstrip('-').replace('-', '_')] = scoped_dest
 
-    # Support for legacy flags.  Remove when the transition to new options is complete.
     if legacy_dest:  # Forward another hop, to the legacy dest.
       self._dest_forwardings[scoped_dest] = legacy_dest
     return dest
