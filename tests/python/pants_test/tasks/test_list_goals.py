@@ -79,6 +79,9 @@ class ListGoalsTest(ConsoleTaskTest):
     )
 
   def test_list_goals_graph(self):
+    import pydevd
+    pydevd.settrace('localhost', port=5000, stdoutToServer=True, stderrToServer=True)
+
     Phase.clear()
 
     Goal(name=self._LIST_GOALS_NAME, action=ListGoals)\

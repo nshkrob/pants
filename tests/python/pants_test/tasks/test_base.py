@@ -76,7 +76,7 @@ def prepare_task(task_type,
                     build_file_parser=build_file_parser)
   try:
     # See if this task takes new_style args in its ctor.
-    task = task_type(context, workdir, options=new_options.get_parser('test_task_scope'), **kwargs)
+    task = task_type(context, workdir, options=new_options.for_scope('test_task_scope'), **kwargs)
   except TypeError:
     # Nope, it's a task that hasn't been ported yet.
     task = task_type(context, workdir, **kwargs)

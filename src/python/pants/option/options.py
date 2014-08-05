@@ -10,7 +10,7 @@ import sys
 
 from pants.base.build_environment import pants_release
 from pants.goal.phase import Phase
-from pants.option.arg_splitter import ArgSplitter
+from pants.option.arg_splitter import ArgSplitter, GLOBAL_SCOPE
 from pants.option.option_value_container import OptionValueContainer
 from pants.option.parser import ParseError
 from pants.option.parser_hierarchy import ParserHierarchy
@@ -115,7 +115,7 @@ class Options(object):
 
   def register_global(self, *args, **kwargs):
     """Register an option in the global scope, using argparse params."""
-    self.register('', *args, **kwargs)
+    self.register(GLOBAL_SCOPE, *args, **kwargs)
 
   def get_parser(self, scope):
     """Returns the parser for the given scope, so code can register on it directly."""
@@ -123,7 +123,7 @@ class Options(object):
 
   def get_global_parser(self):
     """Returns the parser for the global scope, so code can register on it directly."""
-    return self.get_parser('')
+    return self.get_parser(GLOBAL_SCOPE)
 
   def for_scope(self, scope):
     """Return the option values for the given scope.
@@ -136,7 +136,7 @@ class Options(object):
       return self._values_by_scope[scope]
 
     # First get enclosing scope's option values, if any.
-    if scope == '':
+    if scope == GLOBAL_SCOPE:
       values = OptionValueContainer()
       if self._legacy_values:
         values.update(vars(self._legacy_values))  # Proxy legacy option values.
@@ -155,7 +155,7 @@ class Options(object):
 
   def for_global_scope(self):
     """Return the option values for the global scope."""
-    return self.for_scope('')
+    return self.for_scope(GLOBAL_SCOPE)
 
   def print_help(self, msg=None, phases=None, legacy=False):
     """Print a help screen, followed by an optional message.
