@@ -8,6 +8,7 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
 from argparse import ArgumentParser
 import copy
 
+from pants.option.arg_splitter import GLOBAL_SCOPE
 from pants.option.help_formatter import PantsHelpFormatter
 from pants.option.legacy_options import LegacyOptions
 from pants.option.ranked_value import RankedValue
@@ -23,7 +24,7 @@ class ParseError(Exception):
   pass
 
 
-# Standard ArgumentParser prints usage and exists on error. We subclass so we can raise instead.
+# Standard ArgumentParser prints usage and exits on error. We subclass so we can raise instead.
 # Note that subclassing ArgumentParser for this purpose is allowed by the argparse API.
 class CustomArgumentParser(ArgumentParser):
   def error(self, message):
@@ -94,7 +95,7 @@ class Parser(object):
     self._child_parsers = []
 
     if self._parent_parser:
-      self._parent_parser._child_parsers.append(self)
+      self._parent_parser._register_child_parser(self)
 
     # Handles legacy options on our behalf.
     self._legacy_options = LegacyOptions(scope, legacy_parser) if legacy_parser else None
@@ -116,16 +117,16 @@ class Parser(object):
   def register(self, *args, **kwargs):
     """Register an option, using argparse params."""
     if self._frozen:
-      raise RegistrationError('Cannot register option %s in scope %s after registering options '
-                              'in any of its inner scopes.' % (args[0], self._scope))
+      raise RegistrationError('Cannot register option {0} in scope {1} after registering options '
+                              'in any of its inner scopes.'.format(args[0], self._scope))
 
     # Prevent further registration in enclosing scopes.
     ancestor = self._parent_parser
     while ancestor:
-      ancestor._frozen = True
+      ancestor._freeze()
       ancestor = ancestor._parent_parser
 
-    clean_kwargs = copy.copy(kwargs)  # kwargs without legacy-related keys.
+    clean_kwargs = copy.copy(kwargs)  # Copy kwargs so we can remove legacy-related keys.
     kwargs = None  # Ensure no code below modifies kwargs accidentally.
     self._validate(args, clean_kwargs)
     legacy_dest = clean_kwargs.pop('legacy', None)
@@ -138,7 +139,7 @@ class Parser(object):
       for flag in args:
         if flag.startswith('--') and not flag.startswith('--no-'):
           inverse_args.append('--no-' + flag[2:])
-          help_args.append('--[no-]%s' % flag[2:])
+          help_args.append('--[no-]{0}'.format(flag[2:]))
         else:
           help_args.append(flag)
     else:
@@ -206,7 +207,7 @@ class Parser(object):
     Note: Modfies kwargs.
     """
     dest = self._select_dest(args, kwargs)
-    scoped_dest = '_%s_%s__' % (self._scope or 'DEFAULT', dest)
+    scoped_dest = '_{0}_{1}__'.format(self._scope or 'DEFAULT', dest)
 
     # Make argparse write to the internal dest.
     kwargs['dest'] = scoped_dest
@@ -243,8 +244,8 @@ class Parser(object):
 
     The source of the default value is chosen according to the ranking in RankedValue.
     """
-    config_section = 'DEFAULT' if self._scope == '' else self._scope
-    env_var = 'PANTS_%s_%s' % (config_section.upper().replace('.', '_'), dest.upper())
+    config_section = 'DEFAULT' if self._scope == GLOBAL_SCOPE else self._scope
+    env_var = 'PANTS_{0}_{1}'.format(config_section.upper().replace('.', '_'), dest.upper())
     value_type = kwargs.get('type', str)
     env_val_str = self._env.get(env_var) if self._env else None
 
@@ -260,6 +261,12 @@ class Parser(object):
     inverse_kwargs['action'] = inverse_action
     inverse_kwargs.pop('default', None)
     return inverse_kwargs
+
+  def _register_child_parser(self, child):
+    self._child_parsers.append(child)
+
+  def _freeze(self):
+    self._frozen = True
 
   def __str__(self):
     return 'Parser(%s)' % self._scope
