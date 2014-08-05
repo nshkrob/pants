@@ -8,6 +8,7 @@ python_library(
     globs('java/distribution/*.class') +
     rglobs('reporting/assets/*') + globs('reporting/templates/*.mustache') +
     globs('backend/core/tasks/templates/builddictionary/*.mustache') +
+    globs('backend/jvm/tasks/templates/ensime/*.mustache') +
     globs('backend/jvm/tasks/templates/eclipse/*.mustache') +
     globs('backend/jvm/tasks/templates/idea/*.mustache') +
     globs('backend/jvm/tasks/templates/ivy_resolve/*.mustache') +
@@ -32,7 +33,6 @@ python_library(
     pants('3rdparty/python/twitter/commons:twitter.common.log'),
     pants('3rdparty/python/twitter/commons:twitter.common.process'),
     pants('3rdparty/python/twitter/commons:twitter.common.python'),
-    pants('3rdparty/python/twitter/commons:twitter.common.quantity'),
     pants('3rdparty/python/twitter/commons:twitter.common.threading'),
     pants('3rdparty/python/twitter/commons:twitter.common.util'),
   ]

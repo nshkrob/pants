@@ -162,12 +162,6 @@ def entry_for_one(nom, sym):
 
 
 PREDEFS = {  # some hardwired entries
-  # TODO: There's no docstring in twitter/commons, so hardwired this.
-  #       The legit fix: add a docstring in twitter/commons.
-  #       https://github.com/pantsbuild/pants/issues/372
-  "Amount": {"defn": msg_entry("Amount", """Used in some params,
-                                e.g., ``Amount(2, Time.MINUTES)``.
-                                From twitter.commons.""")},
   "egg" : {"defn": msg_entry("egg",
                              "In older Pants, loads a pre-built Python egg "
                              "from file system. Undefined in newer Pants.")},
@@ -181,16 +175,10 @@ PREDEFS = {  # some hardwired entries
                                           """Deprecated way to group Python tests; use `dependencies`_""")},
   "scala_tests": {"defn": msg_entry("scala_tests",
                   """Old name for `scala_specs`_""")},
-  # TODO: There's no docstring in twitter/commons, so hardwired this.
-  #       The legit fix: add a docstring in twitter/commons.
-  #       https://github.com/pantsbuild/pants/issues/372
-  "Time": {"defn": msg_entry("Time", """Used in some params,
-                             e.g., ``Amount(2, Time.MINUTES)``.
-                             From twitter.commons"""), },
 }
 
 # Report symbols defined in BUILD files (jvm_binary...)
-# Returns dict {"scala_library": ScalaLibrary, "Amount": commons.Amount, ...}
+# Returns dict {"scala_library": ScalaLibrary, ...}
 def get_syms(build_file_parser):
   syms = {}
 
@@ -233,6 +221,15 @@ def sub_tocl(d, substr_list, title):
     if not found: continue
     filtered_anchors.append(anc)
   return TemplateData(t=title, e=filtered_anchors)
+
+
+def jvm_sub_tocl(d):
+  return sub_tocl(d, ["android", "jvm", "backend.core", "java", "scala"], "JVM")
+
+
+def python_sub_tocl(d):
+  return sub_tocl(d, ["backend.python", "core"], "Python")
+
 
 def gen_goals_glopts_reference_data():
   global_option_parser = optparse.OptionParser(add_help_option=False)
@@ -348,9 +345,8 @@ class BuildBuildDictionary(Task):
     """Generate the BUILD dictionary reference rst doc."""
     d = assemble(build_file_parser=self.context.build_file_parser)
     template = resource_string(__name__, os.path.join(self._templates_dir, 'page.mustache'))
-    tocs = [tocl(d),
-            sub_tocl(d, ["android", "jvm", "backend.core", "java", "scala"], "JVM"),
-            sub_tocl(d, ["backend.python", "core"], "Python")]
+    tocs = [tocl(d), jvm_sub_tocl(d), python_sub_tocl(d)]
+
     defns = [d[t]["defn"] for t in sorted(d.keys(), key=_lower)]
     filename = os.path.join(self._outdir, 'build_dictionary.rst')
     self.context.log.info('Generating %s' % filename)

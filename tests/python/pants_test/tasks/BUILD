@@ -96,7 +96,10 @@ python_tests(
   sources = ['test_builddict.py'],
   dependencies = [
     pants(':base'),
+    pants('src/python/pants/backend/core:plugin'),
     pants('src/python/pants/backend/core/tasks:builddictionary'),
+    pants('src/python/pants/backend/jvm:plugin'),
+    pants('src/python/pants/backend/python:plugin'),
   ]
 )
 
