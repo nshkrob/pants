@@ -16,10 +16,6 @@ from pants.option.parser import ParseError
 from pants.option.parser_hierarchy import ParserHierarchy
 
 
-class OptionError(Exception):
-  pass
-
-
 class Options(object):
   """The outward-facing API for interacting with options.
 
@@ -27,8 +23,8 @@ class Options(object):
 
   Examples:
 
- The value in global scope of option '--foo-bar' (registered in global scope) will be selected
- in the following order:
+  The value in global scope of option '--foo-bar' (registered in global scope) will be selected
+  in the following order:
     - The value of the --foo-bar flag in global scope.
     - The value of the PANTS_DEFAULT_FOO_BAR environment variable.
     - The value of the foo_bar key in the [DEFAULT] section of pants.ini.
