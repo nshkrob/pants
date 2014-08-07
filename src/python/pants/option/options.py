@@ -16,10 +16,6 @@ from pants.option.parser import ParseError
 from pants.option.parser_hierarchy import ParserHierarchy
 
 
-class OptionError(Exception):
-  pass
-
-
 class Options(object):
   """The outward-facing API for interacting with options.
 
@@ -27,8 +23,8 @@ class Options(object):
 
   Examples:
 
- The value in global scope of option '--foo-bar' (registered in global scope) will be selected
- in the following order:
+  The value in global scope of option '--foo-bar' (registered in global scope) will be selected
+  in the following order:
     - The value of the --foo-bar flag in global scope.
     - The value of the PANTS_DEFAULT_FOO_BAR environment variable.
     - The value of the foo_bar key in the [DEFAULT] section of pants.ini.
@@ -68,7 +64,7 @@ class Options(object):
     :param env: a dict of environment variables.
     :param config: data from a config file (must support config.get(section, name, default=)).
     :param known_scopes: a list of all possible scopes that may be encountered.
-    :param args: the cmd-line args.
+    :param args: a list of cmd-line args.
     :param legacy_parser: optional instance of optparse.OptionParser, used to register and access
            the old-style flags during migration.
     """
@@ -139,7 +135,7 @@ class Options(object):
     if scope == GLOBAL_SCOPE:
       values = OptionValueContainer()
       if self._legacy_values:
-        values.update(vars(self._legacy_values))  # Proxy legacy option values.
+        values.update(vars(self._legacy_values))  # Proxy any legacy option values.
     else:
       values = copy.copy(self.for_scope(scope.rpartition('.')[0]))
 
@@ -181,10 +177,10 @@ class Options(object):
     else:
       print(pants_release())
       print('\nUsage:')
-      print('  ./pants goal [option ...] [goal ...] [target...]  Attempt the specified goals.')
-      print('  ./pants goal help                                 Get help.')
-      print('  ./pants goal help [goal]                          Get help for the specified goal.')
-      print('  ./pants goal goals                                List all installed goals.')
+      print('  ./pants [option ...] [goal ...] [target...]  Attempt the specified goals.')
+      print('  ./pants help                                 Get help.')
+      print('  ./pants help [goal]                          Get help for the specified goal.')
+      print('  ./pants goals                                List all installed goals.')
       print('')
       print('  [target] accepts two special forms:')
       print('    dir:  to include all targets in the specified directory.')

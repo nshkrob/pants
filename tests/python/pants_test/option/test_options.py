@@ -6,9 +6,7 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
                         print_function, unicode_literals)
 
 import shlex
-import unittest
-
-import pytest
+import unittest2 as unittest
 
 from pants.option.options import Options
 
@@ -133,7 +131,7 @@ class OptionsTest(unittest.TestCase):
 
     self.assertEqual(1, options.for_global_scope().a)
     self.assertEqual(99, options.for_global_scope().b)
-    with pytest.raises(AttributeError):
+    with self.assertRaises(AttributeError):
       _ = options.for_global_scope().c
 
     self.assertEqual(1, options.for_scope('compile').a)
