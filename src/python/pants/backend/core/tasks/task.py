@@ -65,6 +65,15 @@ class TaskBase(AbstractClass):
 
   # TODO(benjy): Remove the default for the options argument, once all subclasses have been ported.
   def __init__(self, context, workdir, options=None):
+    """Subclass __init__ methods, if defined, *must* follow this idiom:
+
+    class MyTask(Task):
+      def __init__(self, *args, **kwargs):
+        super(MyTask, self).__init__(*args, **kwargs)
+        ...
+
+    This allows us to change Task.__init__()'s arguments without changing every subclass.
+    """
     self.context = context
     self._workdir = workdir
     self._new_options = options
