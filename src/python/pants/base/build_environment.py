@@ -42,6 +42,7 @@ def get_scm():
   """Returns the pants Scm if any."""
   # TODO(John Sirois): Extract a module/class to carry the bootstrap logic.
   global _SCM
+  print(">>>>>>>>> Getting SCM! currently %s" % _SCM)
   if not _SCM:
     from pants.scm.git import Git
     # We know about git, so attempt an auto-configure
