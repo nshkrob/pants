@@ -44,8 +44,8 @@ def get_scm():
   global _SCM
   if not _SCM:
     # We know about git, so attempt an auto-configure
-    git_dir = os.path.join(get_buildroot(), '.git')
-    if os.path.isdir(git_dir):
+    worktree = Git.detect_worktree()
+    if worktree and os.path.isdir(worktree):
       from pants.scm.git import Git
       git = Git(worktree=get_buildroot())
       try:
