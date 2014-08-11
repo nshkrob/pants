@@ -20,7 +20,7 @@ class Git(Scm):
     cmd = ['git', 'rev-parse', '--git-dir']
     process, out = cls._invoke(cmd)
     try:
-      cls._check_result(process.returncode, raise_type=Scm.ScmException)
+      cls._check_result(cmd, process.returncode, raise_type=Scm.ScmException)
     except Scm.ScmException:
       return None
     return cls._cleanse(out)

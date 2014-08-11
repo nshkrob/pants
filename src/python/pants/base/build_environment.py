@@ -43,10 +43,10 @@ def get_scm():
   # TODO(John Sirois): Extract a module/class to carry the bootstrap logic.
   global _SCM
   if not _SCM:
+    from pants.scm.git import Git
     # We know about git, so attempt an auto-configure
     worktree = Git.detect_worktree()
     if worktree and os.path.isdir(worktree):
-      from pants.scm.git import Git
       git = Git(worktree=get_buildroot())
       try:
         log.info('Detected git repository on branch %s' % git.branch_name)
