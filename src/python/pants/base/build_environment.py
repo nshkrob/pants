@@ -46,6 +46,7 @@ def get_scm():
     from pants.scm.git import Git
     # We know about git, so attempt an auto-configure
     worktree = Git.detect_worktree()
+    print("Detected git worktree: %s" % worktree)
     if worktree and os.path.isdir(worktree):
       git = Git(worktree=get_buildroot())
       try:
