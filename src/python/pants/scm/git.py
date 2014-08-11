@@ -19,6 +19,7 @@ class Git(Scm):
     """Detect the git working tree above cwd and return it; else, return None."""
     cmd = ['git', 'rev-parse', '--git-dir']
     process, out = cls._invoke(cmd)
+    print("Result of git rev-parse --git-dir was %s" % cls._cleanse(out))
     try:
       cls._check_result(cmd, process.returncode, raise_type=Scm.ScmException)
     except Scm.ScmException:
