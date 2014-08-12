@@ -17,9 +17,9 @@ class Git(Scm):
   @classmethod
   def detect_worktree(cls):
     """Detect the git working tree above cwd and return it; else, return None."""
-    cmd = ['git', 'rev-parse', '--git-dir']
+    cmd = ['git', 'rev-parse', '--show-toplevel']
     process, out = cls._invoke(cmd)
-    print("Result of git rev-parse --git-dir was %s" % cls._cleanse(out))
+    print("Result of git rev-parse --show-toplevel was %s" % cls._cleanse(out))
     try:
       cls._check_result(cmd, process.returncode, raise_type=Scm.ScmException)
     except Scm.ScmException:
