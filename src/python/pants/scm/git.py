@@ -100,7 +100,7 @@ class Git(Scm):
       untracked = self._check_output(['ls-files', '--other', '--exclude-standard'],
                                      raise_type=Scm.LocalException)
       files.update(untracked.split())
-    return files
+    return [os.path.join(self._worktree, f) for f in files]
 
   def changelog(self, from_commit=None, files=None):
     args = ['whatchanged', '--stat', '--find-renames', '--find-copies']
