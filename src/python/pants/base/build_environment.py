@@ -49,7 +49,7 @@ def get_scm():
     worktree = Git.detect_worktree()
     print("Detected git worktree: %s" % worktree)
     if worktree and os.path.isdir(worktree):
-      git = Git(worktree=get_buildroot())
+      git = Git(worktree=worktree)
       try:
         log.info('Detected git repository on branch %s' % git.branch_name)
         set_scm(git)
