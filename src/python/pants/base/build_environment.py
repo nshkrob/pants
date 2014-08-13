@@ -42,16 +42,14 @@ def get_scm():
   """Returns the pants Scm if any."""
   # TODO(John Sirois): Extract a module/class to carry the bootstrap logic.
   global _SCM
-  print(">>>>>>>>> Getting SCM! currently %s" % _SCM)
   if not _SCM:
     from pants.scm.git import Git
     # We know about git, so attempt an auto-configure
     worktree = Git.detect_worktree()
-    print("Detected git worktree: %s" % worktree)
     if worktree and os.path.isdir(worktree):
       git = Git(worktree=worktree)
       try:
-        log.info('Detected git repository on branch %s' % git.branch_name)
+        log.info('Detected git repository at %s on branch %s' % (worktree, git.branch_name))
         set_scm(git)
       except git.LocalException:
         pass
