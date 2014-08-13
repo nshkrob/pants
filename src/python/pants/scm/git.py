@@ -85,22 +85,29 @@ class Git(Scm):
                                 raise_type=Scm.LocalException)
     return None if branch == 'HEAD' else branch
 
-  def changed_files(self, from_commit=None, include_untracked=False):
-    uncommitted_changes = self._check_output(['diff', '--name-only', 'HEAD'],
+  def changed_files(self, from_commit=None, include_untracked=False, relative_to=None):
+    relative_to = relative_to or self._worktree
+    rel_suffix = ['--', relative_to]
+    uncommitted_changes = self._check_output(['diff', '--name-only', 'HEAD'] + rel_suffix,
                                              raise_type=Scm.LocalException)
 
     files = set(uncommitted_changes.split())
     if from_commit:
       # Grab the diff from the merge-base to HEAD using ... syntax.  This ensures we have just
       # the changes that have occurred on the current branch.
-      committed_changes = self._check_output(['diff', '--name-only', '%s...HEAD' % from_commit],
+      committed_cmd = ['diff', '--name-only', '%s...HEAD' % from_commit] + rel_suffix
+      committed_changes = self._check_output(committed_cmd,
                                              raise_type=Scm.LocalException)
       files.update(committed_changes.split())
     if include_untracked:
-      untracked = self._check_output(['ls-files', '--other', '--exclude-standard'],
+      untracked_cmd = ['ls-files', '--other', '--exclude-standard'] + rel_suffix
+      untracked = self._check_output(untracked_cmd,
                                      raise_type=Scm.LocalException)
       files.update(untracked.split())
-    return [os.path.join(self._worktree, f) for f in files]
+    # git will report changed files relative to the worktree: re-relativize to relative_to
+    def rerelative_to(worktree_path):
+      return os.path.relpath(os.path.join(self._worktree, worktree_path), relative_to)
+    return set([rerelative_to(f) for f in files])
 
   def changelog(self, from_commit=None, files=None):
     args = ['whatchanged', '--stat', '--find-renames', '--find-copies']

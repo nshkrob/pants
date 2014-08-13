@@ -136,6 +136,9 @@ class GitTest(unittest.TestCase):
     self.assertEqual(set(['README']), self.git.changed_files())
     self.assertEqual(set(['README', 'INSTALL']), self.git.changed_files(include_untracked=True))
 
+    # confirm that files outside of a given relative_to path are ignored
+    self.assertEqual(set(), self.git.changed_files(relative_to='non-existent'))
+
     try:
       # These changes should be rejected because our branch point from origin is 1 commit behind
       # the changes pushed there in clone 2.
