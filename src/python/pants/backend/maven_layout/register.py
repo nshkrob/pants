@@ -15,3 +15,11 @@ def build_file_aliases():
       'maven_layout': BuildFileAliases.curry_context(maven_layout)
     }
   )
+
+
+def register_commands():
+  pass
+
+
+def register_tasks():
+  pass

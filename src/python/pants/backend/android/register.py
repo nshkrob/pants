@@ -22,6 +22,11 @@ def build_file_aliases():
     }
   )
 
+
+def register_commands():
+  pass
+
+
 def register_tasks():
   task(name='aapt', action=AaptGen).install('gen')
 

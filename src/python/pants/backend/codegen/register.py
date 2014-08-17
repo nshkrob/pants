@@ -36,6 +36,10 @@ def build_file_aliases():
     )
 
 
+def register_commands():
+  pass
+
+
 def register_tasks():
   task(name='thrift', action=ApacheThriftGen).install('gen').with_description('Generate code.')
 
