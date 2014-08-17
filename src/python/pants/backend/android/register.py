@@ -22,7 +22,7 @@ def build_file_aliases():
     }
   )
 
-def register_goals():
+def register_tasks():
   task(name='aapt', action=AaptGen).install('gen')
 
   task(name='dex', action=DxCompile,

@@ -100,7 +100,7 @@ def register_commands():
   GoalRunner._register()
 
 
-def register_goals():
+def register_tasks():
   # Getting help.
   task(name='goals', action=ListGoals
   ).install().with_description('List all documented goals.')

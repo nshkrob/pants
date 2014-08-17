@@ -5,10 +5,15 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
+import logging
+
 from twitter.common.collections import OrderedSet
 
 from pants.base.build_configuration import BuildConfiguration
 from pants.base.exceptions import BackendConfigurationError
+
+
+logger = logging.getLogger(__name__)
 
 
 def load_build_configuration_from_source(additional_backends=None):
@@ -51,12 +56,17 @@ def load_backend(build_configuration, backend_package):
                         {},  # locals
                         ['build_file_aliases',
                          'register_commands',
+                         'register_tasks'
                          'register_goals'])
   except ImportError as e:
     raise BackendConfigurationError('Failed to load the {backend} backend: {error}'
                                     .format(backend=backend_module, error=e))
 
-  def invoke_entrypoint(name):
+  def invoke_entrypoint(name, warn_if_missing=True):
+    def on_failure():
+      if warn_if_missing:
+        logger.warn("In future, registering %s require that '%s()' is defined." % (backend_package, name))
+      return None
     entrypoint = getattr(module, name, lambda: None)
     try:
       return entrypoint()
@@ -70,4 +80,5 @@ def load_backend(build_configuration, backend_package):
     build_configuration.register_aliases(build_file_aliases)
 
   invoke_entrypoint('register_commands')
-  invoke_entrypoint('register_goals')
+  invoke_entrypoint('register_tasks')
+  invoke_entrypoint('register_goals', warn_if_missing=False)

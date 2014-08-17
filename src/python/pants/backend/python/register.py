@@ -49,7 +49,7 @@ def register_commands():
     cmd._register()
 
 
-def register_goals():
+def register_tasks():
   task(name='python-binary-create', action=PythonBinaryCreate, dependencies=['bootstrap', 'check-exclusives', 'resources']
   ).install('binary')
 

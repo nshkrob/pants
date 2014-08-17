@@ -36,7 +36,7 @@ def build_file_aliases():
     )
 
 
-def register_goals():
+def register_tasks():
   task(name='thrift', action=ApacheThriftGen).install('gen').with_description('Generate code.')
 
   task(name='scrooge', dependencies=['bootstrap'], action=ScroogeGen).install('gen')

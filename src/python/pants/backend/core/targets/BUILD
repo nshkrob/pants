@@ -18,7 +18,6 @@ python_library(
   dependencies = [
     '3rdparty/python/twitter/commons:twitter.common.collections',
     '3rdparty/python/twitter/commons:twitter.common.lang',
-    '3rdparty/python/twitter/commons:twitter.common.log',
     'src/python/pants/base:address',
     'src/python/pants/base:build_environment',
     'src/python/pants/base:payload',
