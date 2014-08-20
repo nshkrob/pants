@@ -116,6 +116,7 @@ class ScroogeGenTest(BaseTest):
                                                        sources=sources,
                                                        excludes=OrderedSet(),
                                                        dependencies=OrderedSet(),
-                                                       provides=None)
+                                                       provides=None,
+                                                       derived_from=self.target('test_smoke:a'))
       finally:
         Context.add_new_target = saved_add_new_target

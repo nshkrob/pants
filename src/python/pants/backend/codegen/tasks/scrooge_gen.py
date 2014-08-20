@@ -244,7 +244,7 @@ class ScroogeGen(NailgunTask, JvmToolTaskMixin):
                                          provides=gentarget.provides,
                                          dependencies=deps,
                                          excludes=gentarget.excludes,
-                                         derived_from=gen_target)
+                                         derived_from=gentarget)
 
     def create_geninfo(key):
       compiler = self.compiler_for_name[self.defaults.get_compiler(gentarget)]
