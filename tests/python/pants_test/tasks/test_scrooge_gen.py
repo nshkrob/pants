@@ -91,9 +91,10 @@ class ScroogeGenTest(BaseTest):
       )
     '''))
 
+    target = self.target('test_smoke:a')
     task = prepare_task(ScroogeGen,
                         build_graph=self.build_graph,
-                        targets=[self.target('test_smoke:a')],
+                        targets=[target],
                         build_file_parser=self.build_file_parser)
 
     with patch('pants.backend.codegen.tasks.scrooge_gen.calculate_services'):
@@ -117,6 +118,6 @@ class ScroogeGenTest(BaseTest):
                                                        excludes=OrderedSet(),
                                                        dependencies=OrderedSet(),
                                                        provides=None,
-                                                       derived_from=self.target('test_smoke:a'))
+                                                       derived_from=target)
       finally:
         Context.add_new_target = saved_add_new_target
