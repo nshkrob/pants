@@ -155,7 +155,7 @@ class DependencyWriter(object):
     internal_codegen = {}
     configurations = set(confs or [])
     for dep in target_internal_dependencies(target):
-      jar = _as_versioned_jar(dep)
+      jar = self._as_versioned_jar(dep)
       dependencies[(jar.org, jar.name)] = self.internaldep(jar, dep)
       if dep.is_codegen:
         internal_codegen[jar.name] = jar.name
