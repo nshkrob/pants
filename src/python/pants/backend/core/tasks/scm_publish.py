@@ -30,9 +30,15 @@ class Namedver(Version):
 
   @classmethod
   def parse(cls, version):
+    # must not contain whitespace
     if cls._WHITESPACE.search(version):
       raise ValueError("Named versions may not contain whitespace: '%s'." % version)
-    return Namedver(version)
+    # must not be valid semver
+    try:
+      Semver.parse(version)
+    except:
+      return Namedver(version)
+    raise ValueError("Named versions must not be valid semantic versions: '%s'" % version)
 
   def __init__(self, version):
     self._version = version

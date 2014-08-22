@@ -19,7 +19,7 @@ from twitter.common.collections import OrderedDict, OrderedSet
 from twitter.common.config import Properties
 from twitter.common.log.options import LogOptions
 
-from pants.backend.core.tasks.scm_publish import ScmPublish, Semver, Version
+from pants.backend.core.tasks.scm_publish import Namedver, ScmPublish, Semver, Version
 from pants.backend.jvm.ivy_utils import IvyUtils
 from pants.backend.jvm.targets.jarable import Jarable
 from pants.backend.jvm.targets.scala_library import ScalaLibrary
