@@ -26,13 +26,13 @@ class Version(object):
 
 
 class Namedver(Version):
-  _WHITESPACE = re.compile('\s')
+  _VALID_NAME = re.compile('^[-_A-Za-z0-9]+$')
 
   @classmethod
   def parse(cls, version):
     # must not contain whitespace
-    if cls._WHITESPACE.search(version):
-      raise ValueError("Named versions may not contain whitespace: '%s'." % version)
+    if not cls._VALID_NAME.match(version):
+      raise ValueError("Named versions must be alphanumeric: '%s'" % version)
     # must not be valid semver
     try:
       Semver.parse(version)
