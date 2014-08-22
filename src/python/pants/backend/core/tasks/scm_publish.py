@@ -5,10 +5,52 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
+from abc import abstractmethod
+import re
+
 from pants.base.exceptions import TaskError
 
+class Version(object):
+  @staticmethod
+  def parse(version):
+    """Attempts to parse the given string as Semver, then falls back to Namedver."""
+    try:
+      return Semver.parse(version)
+    except:
+      return Namedver.parse(version)
 
-class Semver(object):
+  @abstractmethod
+  def version(self):
+    """Returns the string representation of this Version."""
+    pass
+
+
+class Namedver(Version):
+  _WHITESPACE = re.compile('\s')
+
+  @classmethod
+  def parse(cls, version):
+    if cls._WHITESPACE.search(version):
+      raise ValueError("Named versions may not contain whitespace: '%s'." % version)
+    return Namedver(version)
+
+  def __init__(self, version):
+    self._version = version
+
+  def version(self):
+    return self._version
+
+  def __eq__(self, other):
+    return self._version == other._version
+
+  def __cmp__(self, other):
+    raise ValueError("%s is not comparable to %s" % (self, other))
+
+  def __repr__(self):
+    return 'Namedver(%s)' % self.version()
+
+
+class Semver(Version):
   @staticmethod
   def parse(version):
     components = version.split('.', 3)
