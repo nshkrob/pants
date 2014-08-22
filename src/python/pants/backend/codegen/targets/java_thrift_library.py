@@ -5,12 +5,12 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
-from pants.backend.jvm.targets.jvm_target import JvmTarget
+from pants.backend.jvm.targets.exportable_jvm_library import ExportableJvmLibrary
 from pants.base.config import Config
 from pants.base.exceptions import TargetDefinitionException
 
 
-class JavaThriftLibrary(JvmTarget):
+class JavaThriftLibrary(ExportableJvmLibrary):
   """Generates a stub Java or Scala library from thrift IDL files."""
 
   class Defaults(object):
