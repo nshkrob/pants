@@ -10,6 +10,7 @@ import os
 
 from pants.backend.core.tasks.console_task import ConsoleTask
 from pants.backend.core.targets.dependencies import Dependencies
+from pants.backend.core.targets.resources import Resources
 from pants.backend.jvm.targets.jar_dependency import JarDependency
 from pants.base.build_environment import get_buildroot
 from pants.base.exceptions import TaskError
@@ -21,6 +22,13 @@ class Depmap(ConsoleTask):
   """Generates either a textual dependency tree or a graphviz digraph dot file for the dependency
   set of a target.
   """
+  class IntelliJConstants(object):
+    TEST = "TEST"
+    SOURCE = "SOURCE"
+    RESOURCE = "RESOURCE"
+    TEST_RESOURCES = "TEST_RESOURCES"
+    SOURCE_GENERATED = "SOURCE_GENERATED"
+
 
   @staticmethod
   def _is_jvm(dep):
@@ -238,12 +246,21 @@ class Depmap(ConsoleTask):
       """
       :type current_target:pants.base.target.Target
       """
+      def get_target_type(current_target):
+        if current_target.is_test:
+          return Depmap.IntelliJConstants.TEST
+        else:
+          if isinstance(current_target, Resources):
+
+            return Depmap.IntelliJConstants.RESOURCE
+          else:
+            return Depmap.IntelliJConstants.SOURCE
 
       info = {
         'targets': [],
         'libraries': [],
         'roots': [],
-        'test_target': current_target.is_test
+        'target_type': get_target_type(current_target)
       }
 
       for dep in current_target.dependencies:
@@ -284,4 +301,3 @@ class Depmap(ConsoleTask):
       for module in dep.modules_by_ref.values():
         mapping[self._jar_id(module.ref)] = [artifact.path for artifact in module.artifacts]
     return mapping
-
