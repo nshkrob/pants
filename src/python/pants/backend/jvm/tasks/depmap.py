@@ -15,6 +15,7 @@ from pants.backend.jvm.targets.jar_dependency import JarDependency
 from pants.base.build_environment import get_buildroot
 from pants.base.exceptions import TaskError
 
+
 # Changing the behavior of this task may affect the IntelliJ Pants plugin
 # Please add fkorotkov or ajohnson to reviews for this file
 # XXX(pl): JVM hairball violator
@@ -26,9 +27,8 @@ class Depmap(ConsoleTask):
     TEST = "TEST"
     SOURCE = "SOURCE"
     RESOURCE = "RESOURCE"
-    TEST_RESOURCES = "TEST_RESOURCES"
+    TEST_RESOURCE = "TEST_RESOURCE"
     SOURCE_GENERATED = "SOURCE_GENERATED"
-
 
   @staticmethod
   def _is_jvm(dep):
@@ -96,7 +96,6 @@ class Depmap(ConsoleTask):
                             dest="depmap_is_formatted",
                             default=True,
                             help='Causes project-info output to be a single line of JSON')
-
 
   def __init__(self, *args, **kwargs):
     super(Depmap, self).__init__(*args, **kwargs)
@@ -241,6 +240,7 @@ class Depmap(ConsoleTask):
 
   def project_info_output(self, targets):
     targets_map = {}
+    resource_target_map = {}
 
     def process_target(current_target):
       """
@@ -250,8 +250,9 @@ class Depmap(ConsoleTask):
         if current_target.is_test:
           return Depmap.IntelliJConstants.TEST
         else:
-          if isinstance(current_target, Resources):
-
+          if isinstance(current_target, Resources) and resource_target_map[current_target].is_test:
+            return Depmap.IntelliJConstants.TEST_RESOURCE
+          elif isinstance(current_target, Resources):
             return Depmap.IntelliJConstants.RESOURCE
           else:
             return Depmap.IntelliJConstants.SOURCE
@@ -266,10 +267,12 @@ class Depmap(ConsoleTask):
       for dep in current_target.dependencies:
         if dep.is_java or dep.is_jar_library or dep.is_jvm or dep.is_scala or dep.is_scalac_plugin:
           info['targets'].append(self._address(dep.address))
-
         if dep.is_jar_library:
           for jar in dep.jar_dependencies:
             info['libraries'].append(self._jar_id(jar))
+        if isinstance(dep, Resources):
+          info['targets'].append(self._address(dep.address))
+          resource_target_map[dep] = current_target
 
       roots = list(set(
         [os.path.dirname(source) for source in current_target.sources_relative_to_source_root()]

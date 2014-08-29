@@ -302,7 +302,7 @@ class ProjectInfoTest(ConsoleTaskTest):
     )
 
     test_resource = self.make_target(
-      'project_info:test_resources',
+      'project_info:test_resource',
       target_type=Resources,
       sources=['y_resource', 'z_resource'],
     )
@@ -312,7 +312,7 @@ class ProjectInfoTest(ConsoleTaskTest):
       target_type=JavaTests,
       dependencies=[second],
       sources=['this/is/a/test/source/FooTest.scala'],
-      resources=['project_info:test_resources'],
+      resources=[test_resource],
     )
 
     jvm_binary = self.make_target(
@@ -328,16 +328,16 @@ class ProjectInfoTest(ConsoleTaskTest):
     )
 
     src_resource = self.make_target(
-      'project_info:resources',
+      'project_info:resource',
       target_type=Resources,
       sources=['a_resource', 'b_resource'],
     )
 
     self.make_target(
-        'project_info:test_target_type',
+        'project_info:target_type',
         target_type=ScalaLibrary,
         dependencies=[jvm_binary],
-        resources=['project_info:resources'],
+        resources=[src_resource],
     )
 
   def test_without_dependencies(self):
@@ -414,10 +414,10 @@ class ProjectInfoTest(ConsoleTaskTest):
   def test_target_types(self):
     result = get_json(self.execute_console_task(
       args=['--test-project-info'],
-      targets=[self.target('project_info:test_target_type')]
+      targets=[self.target('project_info:target_type')]
     ))
     self.assertEqual('SOURCE',
-                     result['targets']['project_info:test_target_type']['target_type'])
+                     result['targets']['project_info:target_type']['target_type'])
     self.assertEqual('RESOURCE', result['targets']['project_info:resource']['target_type'])
 
 
