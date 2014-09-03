@@ -510,6 +510,16 @@ class JarPublish(JarTask, ScmPublish):
       self.create_source_jar(tgt, jar, version)
       doc_jar = self.create_doc_jar(tgt, jar, version)
 
+      # FIXME: loop over extensions in pants.ini
+      # FIXME: formalize logic for checking targets and walking derived_from chain.
+      if self.context.products.get('idl_thrift_only_jars').has(tgt):
+        x = self.context.products.get('idl_thrift_only_jars').get(tgt)
+        copy_artifact(tgt, x[0], version, typename='idl_thrift_only_jars', suffix='idl')
+      elif tgt.derived_from != tgt:
+        if self.context.products.get('idl_thrift_only_jars').has(tgt.derived_from):
+          x = self.context.products.get('idl_thrift_only_jars').get(tgt.derived_from)
+          copy_artifact(tgt.derived_from, x[0], version, typename='idl_thrift_only_jars', suffix='idl')
+
       confs = set(repo['confs'])
 
       # FIXME: loop over extensions in pants.ini
