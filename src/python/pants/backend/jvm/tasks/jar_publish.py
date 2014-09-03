@@ -512,11 +512,11 @@ class JarPublish(JarTask, ScmPublish):
 
       # FIXME: loop over extensions in pants.ini
       # FIXME: formalize logic for checking targets and walking derived_from chain.
-      if tgt in self.context.products.get('idl_thrift_only_jars'):
+      if self.context.products.get('idl_thrift_only_jars').has(tgt):
         x = self.context.products.get('idl_thrift_only_jars').get(tgt)
         copy_artifact(tgt, x[0], version, typename='idl_thrift_only_jars', suffix='idl')
       elif tgt.derived_from != tgt:
-        if tgt.derived_from in self.context.products.get('idl_thrift_only_jars'):
+        if self.context.products.get('idl_thrift_only_jars').has(tgt.derived_from):
           x = self.context.products.get('idl_thrift_only_jars').get(tgt.derived_from)
           copy_artifact(tgt.derived_from, x[0], version, typename='idl_thrift_only_jars', suffix='idl')
 
