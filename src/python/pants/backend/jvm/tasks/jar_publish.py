@@ -511,6 +511,23 @@ class JarPublish(JarTask, ScmPublish):
       doc_jar = self.create_doc_jar(tgt, jar, version)
 
       confs = set(repo['confs'])
+
+      # FIXME: loop over extensions in pants.ini
+      # FIXME: formalize logic for checking targets and walking derived_from chain.
+      if self.context.products.get('idl_thrift_only_jars').has(tgt):
+        x = self.context.products.get('idl_thrift_only_jars').get(tgt)
+        copy_artifact(tgt, x[0], version, typename='idl_thrift_only_jars', suffix='idl')
+      elif tgt.derived_from != tgt:
+        if self.context.products.get('idl_thrift_only_jars').has(tgt.derived_from):
+          x = self.context.products.get('idl_thrift_only_jars').get(tgt.derived_from)
+          # FIXME: x['path'] is a list of jars, that have the right name? What follows is a hack.
+          import copy
+          thrift_jar = copy.copy(jar)
+          thrift_jar.name = "%s-only" % jar.name
+          copy_artifact(tgt.derived_from, thrift_jar, version, typename='idl_thrift_only_jars', suffix='idl')
+          # FIXME: should I add to published.append() -- that will make a new finagle-zipkin-thrift-only target get published. Or do I want finagle-zipkin-thrift-only jar to ride along with finagle-zipkin-thrift target? I feel like I've been aiming towards the latter.
+          stage_artifact(tgt.derived_from, thrift_jar, version, changelog, confs)
+
       confs.add(IvyWriter.SOURCES_CONFIG)
       if doc_jar:
         confs.add(IvyWriter.JAVADOC_CONFIG)
