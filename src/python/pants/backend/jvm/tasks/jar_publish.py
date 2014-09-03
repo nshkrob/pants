@@ -489,6 +489,8 @@ class JarPublish(JarTask, ScmPublish):
                                   artifact_ext=artifact_ext)
 
       with safe_open(path(suffix='-CHANGELOG', extension='txt'), 'w') as changelog_file:
+        print(changelog)
+        changelog = u''.join(changelog).encode('utf-8')
         changelog_file.write(changelog)
       ivyxml = path(name='ivy', extension='xml')
 
@@ -535,7 +537,8 @@ class JarPublish(JarTask, ScmPublish):
           thrift_jar = copy.copy(jar)
           thrift_jar.name = "%s-only" % jar.name
           copy_artifact(tgt.derived_from, thrift_jar, version, typename='idl_thrift_only_jars', suffix='idl')
-          # FIXME: should I add to published.append() -- that will make a new finagle-zipkin-thrift-only target get published. Or do I want finagle-zipkin-thrift-only jar to ride along with finagle-zipkin-thrift target? I feel like I've been aiming towards the latter.
+          # FIXME: should I add to published.append() -- that will make a new finagle-zipkin-thrift-only target get published.
+          # Or do I want finagle-zipkin-thrift-only jar to ride along with finagle-zipkin-thrift target? I feel like I've been aiming towards the latter.
           stage_artifact(tgt.derived_from, thrift_jar, version, changelog, confs)
 
       confs.add(IvyWriter.SOURCES_CONFIG)
