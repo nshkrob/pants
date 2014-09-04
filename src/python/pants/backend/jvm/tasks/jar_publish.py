@@ -514,20 +514,32 @@ class JarPublish(JarTask, ScmPublish):
 
       confs = set(repo['confs'])
 
-      # FIXME: loop over extensions in pants.ini
-      # FIXME: formalize logic for checking targets and walking derived_from chain.
-      if self.context.products.get('idl_thrift_only_jars').has(tgt):
-        x = self.context.products.get('idl_thrift_only_jars').get(tgt)
-        copy_artifact(tgt, x[0], version, typename='idl_thrift_only_jars', suffix='idl')
-      elif tgt.derived_from != tgt:
-        if self.context.products.get('idl_thrift_only_jars').has(tgt.derived_from):
-          x = self.context.products.get('idl_thrift_only_jars').get(tgt.derived_from)
-          # FIXME: x['path'] is a list of jars, that have the right name? What follows is a hack.
-          copy_artifact(tgt.derived_from, jar, version, typename='idl_thrift_only_jars', suffix='-idl', override_name="%s-only" % jar.name)
-          confs.add('idl')
-          # FIXME: should I add to published.append() -- that will make a new finagle-zipkin-thrift-only target get published.
-          # Or do I want finagle-zipkin-thrift-only jar to ride along with finagle-zipkin-thrift target? I feel like I've been aiming towards the latter.
-          #stage_artifact(tgt.derived_from, thrift_jar, version, changelog, confs)
+      # Process any extra jars that might have been previously generated for this target, or a
+      # target that it was derived from.
+      publish_extras = self.context.config.getdict(self._CONFIG_SECTION, 'publish_extras')
+      for extra_product in publish_extras:
+        extra_config = publish_extras[extra_product]
+        override_name = None
+        classifier = ''
+        if 'override_name' in extra_config:
+          # If the supplied string has a '{0}' in it, replace it with the current jar name. If not,
+          # the string will be taken verbatim.
+          override_name = extra_config['override_name'].format(jar.name)
+        if 'classifier' in extra_config:
+          classifier = extra_config['classifier']
+
+        # Build a list of targets to check. This list will be the current target, plus the entire
+        # derived_from chain.
+        target_list = [tgt]
+        target = tgt
+        while target.derived_from != target:
+          target_list.append(target.derived_from)
+          target = target.derived_from
+        for cur_tgt in target_list:
+          if self.context.products.get(extra_product).has(cur_tgt):
+            copy_artifact(cur_tgt, jar, version, typename=extra_product, suffix=classifier, override_name=override_name)
+            # FIXME: parameterize this
+            confs.add('idl')
 
       confs.add(IvyWriter.SOURCES_CONFIG)
       if doc_jar:
