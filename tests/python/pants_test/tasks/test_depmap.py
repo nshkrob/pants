@@ -5,6 +5,7 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 import json
+import os
 from textwrap import dedent
 
 from pants.backend.core.register import build_file_aliases as register_core
@@ -434,6 +435,19 @@ class ProjectInfoTest(ConsoleTaskTest):
                      result['targets']['project_info:target_type']['target_type'])
     self.assertEqual('RESOURCE', result['targets']['project_info:resource']['target_type'])
 
+  def test_output_file(self):
+    outfile = os.path.join(self.build_root, '.pants.d', 'test')
+    result = self.execute_console_task(
+      args=['--test-project-info', '--test-project-info-out-file=%s' % outfile],
+      targets=[self.target('project_info:target_type')]
+    )
+    self.assertEqual(result, ['Project info generated at %s' %outfile])
+
+  def test_output_file_error(self):
+    with self.assertRaises(TaskError):
+      self.execute_console_task(args=['--test-project-info',
+                                      '--test-project-info-out-file=%s' % self.build_root],
+                                targets=[self.target('project_info:target_type')])
 
 def get_json(lines):
   return json.loads(''.join(lines))
