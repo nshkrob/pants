@@ -322,7 +322,7 @@ class Depmap(ConsoleTask):
     if self.project_info_out_file:
       try:
         with safe_open(os.path.abspath(self.project_info_out_file), 'w') as outfile:
-          outfile.write('%s\n' % json_graph_info)
+          outfile.write('%s' % json_graph_info)
         return ['Project info generated at %s' %self.project_info_out_file]
       except IOError as e:
         raise TaskError('Could not store project info at {out_file} due to'
