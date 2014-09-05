@@ -516,7 +516,7 @@ class JarPublish(JarTask, ScmPublish):
 
       # Process any extra jars that might have been previously generated for this target, or a
       # target that it was derived from.
-      publish_extras = self.context.config.getdict(self._CONFIG_SECTION, 'publish_extras')
+      publish_extras = self.context.config.getdict(self._CONFIG_SECTION, 'publish_extras') or {}
       for extra_product in publish_extras:
         extra_config = publish_extras[extra_product]
         override_name = None
