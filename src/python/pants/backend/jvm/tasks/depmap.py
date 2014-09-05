@@ -331,7 +331,7 @@ class Depmap(ConsoleTask):
       return json_graph_info
 
   def _resolve_jars_info(self):
-    mapping = defaultdict(list)           q
+    mapping = defaultdict(list)
     jar_data = self.context.products.get_data('ivy_jar_products')
     if not jar_data:
       return mapping
