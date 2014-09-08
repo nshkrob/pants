@@ -140,7 +140,6 @@ python_library(
     'src/python/pants/backend/core/tasks:console_task',
     'src/python/pants/backend/jvm/targets:jvm',
     'src/python/pants/base:build_environment',
-    'src/python/pants/util:dirutil',
   ],
 )
 
