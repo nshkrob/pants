@@ -24,9 +24,9 @@ class ConsoleTask(Task, QuietTaskMixin):
   def setup_parser(cls, option_group, args, mkflag):
     option_group.add_option(mkflag("sep"), dest="console_%s_separator" % cls.__name__,
                             default='\\n', help="String to use to separate results.")
-    option_group.add_option(mkflag('outstream'),
+    option_group.add_option(mkflag('output-file'),
                             dest='console_outstream',
-                            help='Specifies the file to stream the console output to.')
+                            help='Specifies the file to store the console output to.')
 
   def __init__(self, *args, **kwargs):
     super(ConsoleTask, self).__init__(*args, **kwargs)

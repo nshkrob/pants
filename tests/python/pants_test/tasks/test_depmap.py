@@ -436,14 +436,14 @@ class ProjectInfoTest(ConsoleTaskTest):
 
   def test_output_file(self):
     outfile = os.path.join(self.build_root, '.pants.d', 'test')
-    self.execute_console_task(args=['--test-project-info', '--test-outstream=%s' % outfile],
+    self.execute_console_task(args=['--test-project-info', '--test-output-file=%s' % outfile],
                               targets=[self.target('project_info:target_type')])
     self.assertTrue(os.path.exists(outfile))
 
   def test_output_file_error(self):
     with self.assertRaises(TaskError):
       self.execute_console_task(args=['--test-project-info',
-                                      '--test-outstream=%s' % self.build_root],
+                                      '--test-output-file=%s' % self.build_root],
                                 targets=[self.target('project_info:target_type')])
 
 
