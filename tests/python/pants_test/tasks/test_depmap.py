@@ -361,12 +361,11 @@ class ProjectInfoTest(ConsoleTaskTest):
       args=['--test-project-info'],
       targets=[self.target('project_info:third')]
     ))
-    self.assertEqual(['org.apache:apache-jar:12.12.2012'], result['targets']['project_info:third']['libraries'])
+    self.assertEqual(['org.apache:apache-jar:12.12.2012'],
+                     result['targets']['project_info:third']['libraries'])
     self.assertEqual(1, len(result['targets']['project_info:third']['roots']))
-    self.assertEqual(
-      'com.foo',
-      result['targets']['project_info:third']['roots'][0]['package_prefix']
-    )
+    self.assertEqual('com.foo',
+                     result['targets']['project_info:third']['roots'][0]['package_prefix'])
     self.assertEqual(['org.apache:apache-jar:12.12.2012'],
                      result['targets']['project_info:third']['libraries'])
 
@@ -437,17 +436,16 @@ class ProjectInfoTest(ConsoleTaskTest):
 
   def test_output_file(self):
     outfile = os.path.join(self.build_root, '.pants.d', 'test')
-    result = self.execute_console_task(
-      args=['--test-project-info', '--test-project-info-out-file=%s' % outfile],
-      targets=[self.target('project_info:target_type')]
-    )
-    self.assertEqual(result, ['Project info generated at %s' %outfile])
+    self.execute_console_task(args=['--test-project-info', '--test-outstream=%s' % outfile],
+                              targets=[self.target('project_info:target_type')])
+    self.assertTrue(os.path.exists(outfile))
 
   def test_output_file_error(self):
     with self.assertRaises(TaskError):
       self.execute_console_task(args=['--test-project-info',
-                                      '--test-project-info-out-file=%s' % self.build_root],
+                                      '--test-outstream=%s' % self.build_root],
                                 targets=[self.target('project_info:target_type')])
+
 
 def get_json(lines):
   return json.loads(''.join(lines))

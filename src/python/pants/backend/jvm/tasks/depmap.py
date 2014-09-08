@@ -16,7 +16,6 @@ from pants.backend.jvm.targets.jar_dependency import JarDependency
 from pants.backend.jvm.targets.scala_library import ScalaLibrary
 from pants.base.build_environment import get_buildroot
 from pants.base.exceptions import TaskError
-from pants.util.dirutil import safe_open
 
 
 # Changing the behavior of this task may affect the IntelliJ Pants plugin
@@ -88,8 +87,7 @@ class Depmap(ConsoleTask):
                             default=False,
                             help='Specifies the internal dependency graph should be'
                                  ' output in the dot digraph format')
-    cls.project_info_flag = mkflag("project-info")
-    option_group.add_option(cls.project_info_flag,
+    option_group.add_option(mkflag("project-info"),
                             action="store_true",
                             dest="depmap_is_project_info",
                             default=False,
@@ -101,12 +99,6 @@ class Depmap(ConsoleTask):
                             dest="depmap_is_formatted",
                             default=True,
                             help='Causes project-info output to be a single line of JSON')
-    cls.output_file = mkflag('project-info-out-file')
-    option_group.add_option(cls.output_file,
-                            dest='depmap_project_info_out_file',
-                            help='Specifies the file to store the generated project info.'
-                                 ' This option is to be used in conjunction with %s'
-                                 % cls.project_info_flag)
 
   def __init__(self, *args, **kwargs):
     super(Depmap, self).__init__(*args, **kwargs)
@@ -120,13 +112,6 @@ class Depmap(ConsoleTask):
                                                                       cls.external_only_flag)
       raise TaskError(error_str)
 
-    if (self.context.options.depmap_project_info_out_file
-        and not self.context.options.depmap_is_project_info):
-      cls = self.__class__
-      raise TaskError('Option {output_file} specified but {project_info_flag} is missing'
-                        .format(output_file=cls.output_file,
-                                project_info_flag=cls.project_info_flag))
-
     self.is_internal_only = self.context.options.depmap_is_internal_only
     self.is_external_only = self.context.options.depmap_is_external_only
     self.is_minimal = self.context.options.depmap_is_minimal
@@ -134,7 +119,6 @@ class Depmap(ConsoleTask):
     self.separator = self.context.options.depmap_separator
     self.project_info = self.context.options.depmap_is_project_info
     self.format = self.context.options.depmap_is_formatted
-    self.project_info_out_file = self.context.options.depmap_project_info_out_file
 
   def console_output(self, targets):
     if len(self.context.target_roots) == 0:
@@ -293,7 +277,7 @@ class Depmap(ConsoleTask):
           info['targets'].append(self._address(dep.address))
           resource_target_map[dep] = current_target
 
-      java_sources_targets = list(current_target.java_sources) if isinstance(current_target,ScalaLibrary) else list()
+      java_sources_targets = list(current_target.java_sources) if isinstance(current_target, ScalaLibrary) else list()
       """
       :type java_sources_targets:list[pants.base.target.Target]
       """
@@ -315,20 +299,10 @@ class Depmap(ConsoleTask):
       'targets': targets_map,
       'libraries': self._resolve_jars_info()
     }
-    json_graph_info = json.dumps(graph_info,
-                                 indent=4,
-                                 separators=(',', ': ')
-                                 ).splitlines() if self.format else [json.dumps(graph_info)]
-    if self.project_info_out_file:
-      try:
-        with safe_open(os.path.abspath(self.project_info_out_file), 'w') as outfile:
-          outfile.write('%s' % json_graph_info)
-        return ['Project info generated at %s' %self.project_info_out_file]
-      except IOError as e:
-        raise TaskError('Could not store project info at {out_file} due to'
-                        ' {error_str}'.format(out_file=self.project_info_out_file, error_str=e))
+    if self.format:
+      return json.dumps(graph_info, indent=4, separators=(',', ': ')).splitlines()
     else:
-      return json_graph_info
+      return [json.dumps(graph_info)]
 
   def _resolve_jars_info(self):
     mapping = defaultdict(list)
