@@ -61,7 +61,9 @@ class ConsoleTask(Task, QuietTaskMixin):
           self._outstream.write(str(value))
           self._outstream.write(self._console_separator)
       finally:
-        self._outstream.close()
+        self._outstream.flush()
+        if self.context.options.console_outstream:
+          self._outstream.close()
 
   def console_output(self, targets):
     raise NotImplementedError('console_output must be implemented by subclasses of ConsoleTask')
