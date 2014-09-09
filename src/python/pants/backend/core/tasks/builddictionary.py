@@ -15,6 +15,7 @@ from pants.backend.core.tasks.task import Task
 from pants.base.build_manual import get_builddict_info
 from pants.base.exceptions import TaskError
 from pants.base.generator import Generator, TemplateData
+from pants.base.target import AbstractTarget
 from pants.goal.option_helpers import add_global_options
 from pants.goal.goal import Goal
 from pants.util.dirutil import safe_open
@@ -118,27 +119,45 @@ def entry_for_one_class(nom, cls):
   """  Generate a BUILD dictionary entry for a class.
   nom: name like 'python_binary'
   cls: class like pants.python_binary"""
-  try:
+
+  if issubclass(cls, AbstractTarget):
+    # special case for Target classes: "inherit" information up the class tree.
+
+    # TODO(lahosken) dependencies is handled by TargetAddressable popping it
+    #                out of kwargs by name. It never shows up in an
+    #                inspect.getargspec() return value.
+    # TODO(lahosken) And 'name' is a TargetAddressable thing, too.
+
+    args_accumulate = []
+    defaults_accumulate = []
+    docs_accumulate = []
+    docs_already_seen = set([])
+    c = cls
+    while c:
+      args, _, _, defaults = inspect.getargspec(c.__init__)
+      print('ARGS', args, nom)
+      args_accumulate = args[1:] = args_accumulate
+      defaults_accumulate = args[1:] = args_accumulate
+      break
+    argspec = inspect.formatargspec(args_accumulate[1:], None, None, defaults_accumulate)
+    print("ARGSPEC", argspec)
+    funcdoc = cls.__init__.__doc__
+  else:
     args, varargs, varkw, defaults = inspect.getargspec(cls.__init__)
     argspec = inspect.formatargspec(args[1:], varargs, varkw, defaults)
     funcdoc = cls.__init__.__doc__
 
-    methods = []
-    for attrname in dir(cls):
-      attr = getattr(cls, attrname)
-      attr_bdi = get_builddict_info(attr)
-      if attr_bdi is None: continue
-      if inspect.ismethod(attr):
-        methods.append(entry_for_one_method(attrname, attr))
-        continue
-      raise TaskError('@manual.builddict on non-method %s within class %s '
-                      'but I only know what to do with methods' %
-                      (attrname, nom))
-
-  except TypeError:  # __init__ might not be a Python function
-    argspec = None
-    funcdoc = None
-    methods = None
+  methods = []
+  for attrname in dir(cls):
+    attr = getattr(cls, attrname)
+    attr_bdi = get_builddict_info(attr)
+    if attr_bdi is None: continue
+    if inspect.ismethod(attr):
+      methods.append(entry_for_one_method(attrname, attr))
+      continue
+    raise TaskError('@manual.builddict on non-method %s within class %s '
+                    'but I only know what to do with methods' %
+                    (attrname, nom))
 
   return entry(nom,
                classdoc=cls.__doc__,

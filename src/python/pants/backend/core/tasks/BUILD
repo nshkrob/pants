@@ -64,6 +64,7 @@ python_library(
     'src/python/pants/base:config',
     'src/python/pants/base:exceptions',
     'src/python/pants/base:generator',
+    'src/python/pants/base:target',
     'src/python/pants/goal:option_helpers',
     'src/python/pants/goal',
     'src/python/pants/util:dirutil',
