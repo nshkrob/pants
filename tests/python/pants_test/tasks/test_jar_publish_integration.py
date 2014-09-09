@@ -38,7 +38,6 @@ class JarPublishIntegrationTest(PantsRunIntegrationTest):
                        'hello-greet-0.0.1-SNAPSHOT-javadoc.jar',
                        'hello-greet-0.0.1-SNAPSHOT-sources.jar'])
 
-
   def test_publish_extras(self):
     self.publish_test('examples/src/java/com/pants/examples/hello/greet',
                       'com/pants/examples/hello-greet/0.0.1-SNAPSHOT/',
@@ -46,19 +45,27 @@ class JarPublishIntegrationTest(PantsRunIntegrationTest):
                        'hello-greet-0.0.1-SNAPSHOT.jar',
                        'hello-greet-0.0.1-SNAPSHOT.pom',
                        'hello-greet-0.0.1-SNAPSHOT-sources.jar',
-                       'hello-greet-extra_test-0.0.1-SNAPSHOT-idl.jar'],
+                       # FIXME: -extra_example
+                       'hello-greet-only-0.0.1-SNAPSHOT-idl.jar'],
                       extra_options=['--doc-javadoc-skip'],
                       extra_config={
                                     'jar-publish': {
                                       'test_extra_jar': {
-                                        'override_name': '{0}-extra_test',
-                                        'classifier': 'idl',
+                                        # FIXME: -extra_example
+                                        'override_name': '{0}-only',
+                                        'classifier': '-idl',
                                         },
                                       },
-                                    })
+                                    'backends': {
+                                      'packages': [
+                                        'example.pants_publish_plugin',
+                                        ],
+                                      },
+                                    },
+                      extra_env={'WRAPPER_SRCPATH': 'examples/src/python'})
 
   def publish_test(self, target, package_namespace, artifacts, extra_options=None, extra_config=None,
-                   expected_primary_artifact_count=1):
+                   expected_primary_artifact_count=1, extra_env=None):
 
     with temporary_dir() as publish_dir:
       options = ['--publish-local=%s' % publish_dir,
@@ -68,7 +75,8 @@ class JarPublishIntegrationTest(PantsRunIntegrationTest):
         options.extend(extra_options)
 
       yes = 'y' * expected_primary_artifact_count
-      pants_run = self.run_pants(['goal', 'publish', target] + options, config=extra_config, stdin_data=yes)
+      pants_run = self.run_pants(['goal', 'publish', target] + options, config=extra_config,
+                                 stdin_data=yes, extra_env=extra_env)
       self.assertEquals(pants_run.returncode, self.PANTS_SUCCESS_CODE,
                         "goal publish expected success, got {0}\n"
                         "got stderr:\n{1}\n"

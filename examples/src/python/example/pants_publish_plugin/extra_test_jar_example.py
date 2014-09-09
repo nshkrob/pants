@@ -18,7 +18,8 @@ class ExtraTestJarExample(JarTask):
 
     def process(target):
       self.context.log.info("Processing target %s" % target)
-      jar_name = "%s.%s-extra_example" % (target.provides.org, target.provides.name)
+      # FIXME: -extra_example
+      jar_name = "%s.%s-only" % (target.provides.org, target.provides.name)
       jar_path = os.path.join(self.workdir, jar_name)
       example_file_name = os.path.join(self.workdir, "example.txt")
 
