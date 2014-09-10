@@ -112,7 +112,7 @@ class DependencyWriter(object):
     self.template_package_name = template_package_name or __name__
     self.template_relpath = template_relpath
 
-  def write(self, target, path, confs=None):
+  def write(self, target, path, confs=None, extra_confs=None):
     def as_jar(internal_target):
       jar, _, _, _ = self.get_db(internal_target).as_jar_with_version(internal_target)
       return jar
@@ -138,12 +138,13 @@ class DependencyWriter(object):
                      as_jar(target),
                      configurations=list(configurations)).extend(dependencies=dependencies.values())
 
-    template_kwargs = self.templateargs(target_jar, confs)
+    template_kwargs = self.templateargs(target_jar, confs, extra_confs)
+    # FIXME(areitz): do I have the right struct here? How do I make a loop over all available elements of extra_publications? Why do I have so many auto-generated '?' names? I think I need a two level struct, of confs -> extra_confs
     with safe_open(path, 'w') as output:
       template = pkgutil.get_data(self.template_package_name, self.template_relpath)
       Generator(template, **template_kwargs).write(output)
 
-  def templateargs(self, target_jar, confs=None):
+  def templateargs(self, target_jar, confs=None, extra_confs=None):
     """
       Subclasses must return a dict for use by their template given the target jar template data
       and optional specific ivy configurations.
@@ -168,7 +169,7 @@ class PomWriter(DependencyWriter):
         get_db,
         os.path.join('templates', 'jar_publish', 'pom.mustache'))
 
-  def templateargs(self, target_jar, confs=None):
+  def templateargs(self, target_jar, confs=None, extra_confs=None):
     return dict(artifact=target_jar)
 
   def jardep(self, jar):
@@ -194,9 +195,10 @@ class IvyWriter(DependencyWriter):
         IvyUtils.IVY_TEMPLATE_PATH,
         template_package_name=IvyUtils.IVY_TEMPLATE_PACKAGE_NAME)
 
-  def templateargs(self, target_jar, confs=None):
+  def templateargs(self, target_jar, confs=None, extra_confs=None):
     return dict(lib=target_jar.extend(
         publications=set(confs) if confs else set(),
+        extra_publications=extra_confs if extra_confs else {},
         overrides=None))
 
   def _jardep(self, jar, transitive=True, configurations='default'):
@@ -483,7 +485,7 @@ class JarPublish(JarTask, ScmPublish):
       _, _, _, fingerprint = pushdb.as_jar_with_version(tgt)
       return fingerprint or '0.0.0'
 
-    def stage_artifact(tgt, jar, version, changelog, confs=None, artifact_ext=''):
+    def stage_artifact(tgt, jar, version, changelog, confs=None, artifact_ext='', extra_confs=None):
       def path(name=None, suffix='', extension='jar'):
         return self.artifact_path(jar, version, name=name, suffix=suffix, extension=extension,
                                   artifact_ext=artifact_ext)
@@ -494,7 +496,7 @@ class JarPublish(JarTask, ScmPublish):
         changelog_file.write(changelog)
       ivyxml = path(name='ivy', extension='xml')
 
-      IvyWriter(get_pushdb).write(tgt, ivyxml, confs=confs)
+      IvyWriter(get_pushdb).write(tgt, ivyxml, confs=confs, extra_confs=extra_confs)
       PomWriter(get_pushdb).write(tgt, path(extension='pom'))
 
       return ivyxml
@@ -513,6 +515,7 @@ class JarPublish(JarTask, ScmPublish):
       doc_jar = self.create_doc_jar(tgt, jar, version)
 
       confs = set(repo['confs'])
+      extra_confs = {}
 
       # Process any extra jars that might have been previously generated for this target, or a
       # target that it was derived from.
@@ -540,11 +543,15 @@ class JarPublish(JarTask, ScmPublish):
             copy_artifact(cur_tgt, jar, version, typename=extra_product, suffix=classifier, override_name=override_name)
             # FIXME: parameterize this
             confs.add('idl')
+            extra_confs['idl'] = {'name': override_name,
+                                  'type': 'idl',
+                                  'classifier': 'idl',
+                                  'ext': 'jar'}
 
       confs.add(IvyWriter.SOURCES_CONFIG)
       if doc_jar:
         confs.add(IvyWriter.JAVADOC_CONFIG)
-      return stage_artifact(tgt, jar, version, changelog, confs)
+      return stage_artifact(tgt, jar, version, changelog, confs, extra_confs=extra_confs)
 
     if self.overrides:
       print('Publishing with revision overrides:\n  %s' % '\n  '.join(
