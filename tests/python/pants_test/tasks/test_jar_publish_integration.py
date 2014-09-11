@@ -45,17 +45,17 @@ class JarPublishIntegrationTest(PantsRunIntegrationTest):
                        'hello-greet-0.0.1-SNAPSHOT.jar',
                        'hello-greet-0.0.1-SNAPSHOT.pom',
                        'hello-greet-0.0.1-SNAPSHOT-sources.jar',
-                       # FIXME: -extra_example
-                       'hello-greet-only-0.0.1-SNAPSHOT-idl.jar'],
+                       'hello-greet-extra_example-0.0.1-SNAPSHOT-classy.jar'],
                       extra_options=['--doc-javadoc-skip'],
                       extra_config={
                                     'jar-publish': {
-                                      'test_extra_jar': {
-                                        # FIXME: -extra_example
-                                        'override_name': '{0}-only',
-                                        'classifier': '-idl',
+                                      'publish_extras': {
+                                        'extra_test_jar_example': {
+                                          'override_name': '{0}-extra_example',
+                                          'classifier': 'classy',
                                         },
                                       },
+                                    },
                                     'backends': {
                                       'packages': [
                                         'example.pants_publish_plugin',

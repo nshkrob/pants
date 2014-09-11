@@ -381,3 +381,53 @@ locally-published artifact. If the artifact is a jar, then in the
 3rdparty
 :ref:`jar target <bdict_jar>`,
 set ``mutable=True`` and change the version number.
+
+*************************************************
+Appendix A: Adding extra artifacts to the publish
+*************************************************
+
+Pants now supports "publish plugins", which allow end-users to add additional,
+arbitrary artifacts at publish time. For example, let's say that along with
+publishing your jar full of class files, you would also like to publish a
+companion jar that contains some metadata -- code coverage info, source git
+repository, java version that created the jar, etc. To accomlish this, you'll
+first need to write a custom task, which creates any additional files (jar or
+otherwise) that you would like to publish. Next, you'll create a
+``publish_extras`` section under ``[jar-publish]`` in pants.ini, and add a key
+for the new product type. Your custom task will create the extras that you want
+to publish, and write the path to the products map under the key that you have
+defined in pants.ini. The publishing code will loop over all keys found in
+pants.ini, and consult the proudct map. When pants finds a file for the current
+key, it will gather it up, and bundle it in with the rest of the files being
+published.
+
+An example is supplied in the
+``examples/src/python/example/pants_publish_plugin`` directory. To use it, add
+the following to your pants.ini:
+
+    [jar-publish]
+    publish_extras: {
+        'extra_test_jar_example': {
+          'override_name': '{0}-extra_example',
+          'classifier': 'classy',
+        },
+      }
+
+    [backends]
+    packages: [
+        'example.pants_publish_plugin',
+      ]
+
+And invoke pants like this, to do a test publish:
+
+    yes|WRAPPER_SRCPATH=examples/src/python PANTS_DEV=1 ./pants goal publish examples/src/java/com/pants/examples/hello/greet --no-publish-dryrun --publish-local=~/tmp
+
+Now if you examine ``/tmp``, you'll notice that an extra jar has been published
+for the ``greet`` target:
+
+    $ ls -1 /tmp/com/pants/examples/hello-greet/0.0.1-SNAPSHOT/|grep example
+    hello-greet-extra_example-0.0.1-SNAPSHOT-classy.jar
+    hello-greet-extra_example-0.0.1-SNAPSHOT-classy.jar.md5
+    hello-greet-extra_example-0.0.1-SNAPSHOT-classy.jar.sha1
+
+Now you can copy the example task, and tailor it to suit.
