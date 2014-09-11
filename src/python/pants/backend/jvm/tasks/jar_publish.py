@@ -501,11 +501,11 @@ class JarPublish(JarTask, ScmPublish):
 
       return ivyxml
 
-    def copy_artifact(tgt, jar, version, typename, suffix='', artifact_ext='', override_name=None):
+    def copy_artifact(tgt, jar, version, typename, suffix='', extension='jar', artifact_ext='', override_name=None):
       genmap = self.context.products.get(typename)
       for basedir, jars in genmap.get(tgt).items():
         for artifact in jars:
-          path = self.artifact_path(jar, version, name=override_name, suffix=suffix, artifact_ext=artifact_ext)
+          path = self.artifact_path(jar, version, name=override_name, suffix=suffix, extension=extension, artifact_ext=artifact_ext)
           safe_mkdir(os.path.dirname(path))
           shutil.copy(os.path.join(basedir, artifact), path)
 
@@ -515,7 +515,7 @@ class JarPublish(JarTask, ScmPublish):
       doc_jar = self.create_doc_jar(tgt, jar, version)
 
       confs = set(repo['confs'])
-      extra_confs = {}
+      extra_confs = []
 
       # Process any extra jars that might have been previously generated for this target, or a
       # target that it was derived from.
@@ -523,13 +523,16 @@ class JarPublish(JarTask, ScmPublish):
       for extra_product in publish_extras:
         extra_config = publish_extras[extra_product]
         override_name = None
-        classifier = ''
         if 'override_name' in extra_config:
           # If the supplied string has a '{0}' in it, replace it with the current jar name. If not,
           # the string will be taken verbatim.
           override_name = extra_config['override_name'].format(jar.name)
+        classifier = ''
         if 'classifier' in extra_config:
           classifier = extra_config['classifier']
+        extension = 'jar'
+        if 'extension' in extra_config:
+          extension = extra_config['extension']
 
         # Build a list of targets to check. This list will be the current target, plus the entire
         # derived_from chain.
@@ -540,13 +543,13 @@ class JarPublish(JarTask, ScmPublish):
           target = target.derived_from
         for cur_tgt in target_list:
           if self.context.products.get(extra_product).has(cur_tgt):
-            copy_artifact(cur_tgt, jar, version, typename=extra_product, suffix=classifier, override_name=override_name)
-            # FIXME: parameterize this
-            confs.add('idl')
-            extra_confs['idl'] = {'name': override_name,
-                                  'type': 'idl',
-                                  'classifier': 'idl',
-                                  'ext': 'jar'}
+            copy_artifact(cur_tgt, jar, version, typename=extra_product, suffix="-{0}".format(classifier), extension=extension, override_name=override_name)
+            confs.add(classifier)
+            extra_confs.append({'name': override_name,
+                                'type': classifier,
+                                'conf': classifier,
+                                'classifier': classifier,
+                                'ext': extension})
 
       confs.add(IvyWriter.SOURCES_CONFIG)
       if doc_jar:
