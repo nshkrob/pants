@@ -117,8 +117,13 @@ def entry_for_one_method(nom, method):
                indent=2)
 
 
+# regex for docstring lines of the forms
+# :param foo: blah blah blah
+# :param string foo: blah blah blah
 param_re = re.compile(r':param (?P<type>[A-Za-z0-9_]* )?(?P<param>[^:]*):(?P<desc>.*)')
 
+# regex for docstring lines of the form
+# :type foo: list of strings
 type_re = re.compile(r':type (?P<param>[^:]*):(?P<type>.*)')
 
 
