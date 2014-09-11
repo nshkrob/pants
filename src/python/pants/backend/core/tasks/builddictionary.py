@@ -5,10 +5,11 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import inspect
 import optparse
 import os
+import re
 
 from pkg_resources import resource_string
 from pants.backend.core.tasks.task import Task
@@ -115,6 +116,63 @@ def entry_for_one_method(nom, method):
                indent=2)
 
 
+param_re = re.compile(r':param (?P<type>[A-Za-z0-9_]* )?(?P<param>[^:]*):(?P<desc>.*)')
+
+type_re = re.compile(r':type (?P<param>[^:]*):(?P<type>.*)')
+
+def shard_param_docstring(s):
+  """Shard a Target class' sphinx-flavored __init__ docstring by param
+
+  E.g., if "param" were spelled "pxram", and "type" was "txpe" then
+
+  :pxram float x: x coordinate
+  :pxram y: y coordinate
+  :txpe y: float
+
+  should return
+  OrderedDict(
+    "x" : {"type": "float", "param": "x coordinate"},
+    "y" : {"type": "float", "param": "y coordinate"},
+  )
+  """
+  state = ()
+  accumulator = []
+  shards = OrderedDict()
+  s = s or ''
+  for line in s.splitlines():
+    if line and line[0].isspace():
+      accumulator.append(line)
+      continue
+    if state:
+      param, type_or_desc = state
+      if not param in shards:
+        shards[param] = {}
+      shards[param][type_or_desc] = '\n'.join(accumulator)
+      state = ()
+      accumulator = []
+    param_m = param_re.match(line)
+    if param_m:
+      param = param_m.group('param')
+      state = (param, 'param')
+      accumulator = [param_m.group('desc')]
+      if 'type' in param_m.groupdict():
+        if not param in shards:
+          shards[param] = {'type': param_m.group('type')}
+      continue
+    type_m = type_re.match(line)
+    if type_m:
+      state = (type_m.group('param'), 'type')
+      accumulator = [type_m.group('type')]
+      continue
+    state = ()
+  if state:
+    param, type_or_desc = state
+    if not param in shards:
+      shards[param] = {}
+    shards[param][type_or_desc] = '\n'.join(accumulator)
+  return shards
+
+
 def entry_for_one_class(nom, cls):
   """  Generate a BUILD dictionary entry for a class.
   nom: name like 'python_binary'
@@ -123,25 +181,41 @@ def entry_for_one_class(nom, cls):
   if issubclass(cls, AbstractTarget):
     # special case for Target classes: "inherit" information up the class tree.
 
-    # TODO(lahosken) dependencies is handled by TargetAddressable popping it
-    #                out of kwargs by name. It never shows up in an
-    #                inspect.getargspec() return value.
-    # TODO(lahosken) And 'name' is a TargetAddressable thing, too.
-
-    args_accumulate = []
-    defaults_accumulate = []
-    docs_accumulate = []
-    docs_already_seen = set([])
-    c = cls
-    while c:
+    args_accumulator = []
+    defaults_accumulator = ()
+    docs_accumulator = []
+    for c in inspect.getmro(cls):
+      if not issubclass(c, AbstractTarget): continue
+      if not inspect.ismethod(c.__init__): continue
       args, _, _, defaults = inspect.getargspec(c.__init__)
-      print('ARGS', args, nom)
-      args_accumulate = args[1:] = args_accumulate
-      defaults_accumulate = args[1:] = args_accumulate
-      break
-    argspec = inspect.formatargspec(args_accumulate[1:], None, None, defaults_accumulate)
-    print("ARGSPEC", argspec)
-    funcdoc = cls.__init__.__doc__
+      args_accumulator = args[1:] + args_accumulator
+      defaults_accumulator = (defaults or ()) + defaults_accumulator
+      dedented_doc = indent_docstring_by_n(c.__init__.__doc__, 0)
+      docs_accumulator.append(shard_param_docstring(dedented_doc))
+    # Suppress these from BUILD dictionary: they're legit args to the
+    # Target implementation, but they're not for BUILD files:
+    assert(args_accumulator[1] == 'address')
+    assert(args_accumulator[2] == 'build_graph')
+    assert(args_accumulator[3] == 'payload')
+    args_accumulator = [args_accumulator[0]] + args_accumulator[4:]
+    defaults_accumulator = (defaults_accumulator[0],) + defaults_accumulator[4:]
+    argspec = inspect.formatargspec(args_accumulator,
+                                    None,
+                                    None,
+                                    defaults_accumulator)
+    # Suppress these from BUILD dictionary: they're legit args to the
+    # Target implementation, but they're not for BUILD files:
+    suppress = set(['address', 'build_graph', 'payload'])
+    funcdoc = ''
+    for shard in docs_accumulator:
+      for param, parts in shard.items():
+        if param in suppress:
+          continue
+        suppress.add(param) # only show things once
+        if 'param' in parts:
+          funcdoc += '\n:param {0}: {1}'.format(param, parts['param'])
+        if 'type' in parts:
+          funcdoc += '\n:type {0}: {1}'.format(param, parts['type'])
   else:
     args, varargs, varkw, defaults = inspect.getargspec(cls.__init__)
     argspec = inspect.formatargspec(args[1:], varargs, varkw, defaults)

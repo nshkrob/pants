@@ -38,11 +38,8 @@ class PythonBinary(PythonTarget):
                platforms=(),
                **kwargs):
     """
-    :param name: target name
     :param source: the python source file that becomes this binary's __main__.
       If None specified, drops into an interpreter by default.
-    :param dependencies: Other targets that this target depends on.
-    :type dependencies: list of target specs
     :param string entry_point: the default entry point for this binary.  if None, drops into the entry
       point that is defined by source. Something like
       "pants.bin.pants_exe:main", where "pants.bin.pants_exe" is the package
@@ -59,7 +56,6 @@ class PythonBinary(PythonTarget):
     :param compatibility: either a string or list of strings that represents
       interpreter compatibility for this target, using the Requirement-style format,
       e.g. ``'CPython>=3', or just ['>=2.7','<3']`` for requirements agnostic to interpreter class.
-    :param dict exclusives: An optional dict of exclusives tags. See :ref:`howto_check_exclusives` for details.
     """
 
     sources = [] if source is None else [source]
