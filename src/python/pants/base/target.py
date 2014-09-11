@@ -175,7 +175,8 @@ class Target(AbstractTarget):
     :type dependencies: list of target specs
     :param Address address: The Address that maps to this Target in the BuildGraph
     :param BuildGraph build_graph: The BuildGraph that this Target lives within
-    :param exclusives: An optional map of exclusives tags. See :ref:`howto_check_exclusives` for details.
+    :param exclusives: An optional map of exclusives tags.
+      See :ref:`howto_check_exclusives` for details.
     """
     # dependencies is listed above; implementation hides in TargetAddressable
     self.name = name

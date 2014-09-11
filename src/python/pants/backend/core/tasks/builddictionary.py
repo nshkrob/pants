@@ -120,6 +120,7 @@ param_re = re.compile(r':param (?P<type>[A-Za-z0-9_]* )?(?P<param>[^:]*):(?P<des
 
 type_re = re.compile(r':type (?P<param>[^:]*):(?P<type>.*)')
 
+
 def shard_param_docstring(s):
   """Shard a Target class' sphinx-flavored __init__ docstring by param
 
@@ -211,7 +212,7 @@ def entry_for_one_class(nom, cls):
       for param, parts in shard.items():
         if param in suppress:
           continue
-        suppress.add(param) # only show things once
+        suppress.add(param)  # only show things once
         if 'param' in parts:
           funcdoc += '\n:param {0}: {1}'.format(param, parts['param'])
         if 'type' in parts:
