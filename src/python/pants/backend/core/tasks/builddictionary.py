@@ -5,7 +5,7 @@
 from __future__ import (nested_scopes, generators, division, absolute_import, with_statement,
                         print_function, unicode_literals)
 
-from collections import defaultdict, OrderedDict
+from collections import defaultdict
 import inspect
 import optparse
 import os
@@ -20,6 +20,7 @@ from pants.base.target import AbstractTarget
 from pants.goal.option_helpers import add_global_options
 from pants.goal.goal import Goal
 from pants.util.dirutil import safe_open
+from twitter.common.collections.ordereddict import OrderedDict
 
 
 def indent_docstring_by_n(s, n=1):
