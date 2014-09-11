@@ -38,13 +38,16 @@ class PythonBinary(PythonTarget):
                platforms=(),
                **kwargs):
     """
-    :param source: the python source file that becomes this binary's __main__.
+    :param source: relative path to one python source file that becomes this
+      binary's __main__.
       If None specified, drops into an interpreter by default.
     :param string entry_point: the default entry point for this binary.  if None, drops into the entry
       point that is defined by source. Something like
       "pants.bin.pants_exe:main", where "pants.bin.pants_exe" is the package
       name and "main" is the function name (if ommitted, the module is
       executed directly, presuming it has a ``__main.py__``).
+    :param sources: Overridden by source. To specify more than one source file,
+      use a python_library and have the python_binary depend on that library.
     :param inherit_path: inherit the sys.path of the environment that this binary runs in
     :param zip_safe: whether or not this binary is safe to run in compacted (zip-file) form
     :param always_write_cache: whether or not the .deps cache of this PEX file should always

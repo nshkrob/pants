@@ -157,9 +157,10 @@ def shard_param_docstring(s):
       param = param_m.group('param')
       state = (param, 'param')
       accumulator = [param_m.group('desc')]
-      if 'type' in param_m.groupdict():
+      if param_m.group('type'):
         if not param in shards:
-          shards[param] = {'type': param_m.group('type')}
+          shards[param] = {}
+        shards[param]['type'] = param_m.group('type')
       continue
     type_m = type_re.match(line)
     if type_m:
