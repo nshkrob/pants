@@ -6,7 +6,6 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
                         print_function, unicode_literals)
 
 from example.pants_publish_plugin.extra_test_jar_example import ExtraTestJarExample
-from pants.goal.goal import Goal
 from pants.goal.task_registrar import TaskRegistrar as task
 
 task(name='extra_test_jar_example', action=ExtraTestJarExample).install('jar')
