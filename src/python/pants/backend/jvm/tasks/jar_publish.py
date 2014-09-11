@@ -139,7 +139,6 @@ class DependencyWriter(object):
                      configurations=list(configurations)).extend(dependencies=dependencies.values())
 
     template_kwargs = self.templateargs(target_jar, confs, extra_confs)
-    # FIXME(areitz): do I have the right struct here? How do I make a loop over all available elements of extra_publications? Why do I have so many auto-generated '?' names? I think I need a two level struct, of confs -> extra_confs
     with safe_open(path, 'w') as output:
       template = pkgutil.get_data(self.template_package_name, self.template_relpath)
       Generator(template, **template_kwargs).write(output)
@@ -501,11 +500,13 @@ class JarPublish(JarTask, ScmPublish):
 
       return ivyxml
 
-    def copy_artifact(tgt, jar, version, typename, suffix='', extension='jar', artifact_ext='', override_name=None):
+    def copy_artifact(tgt, jar, version, typename, suffix='', extension='jar', artifact_ext='',
+                      override_name=None):
       genmap = self.context.products.get(typename)
       for basedir, jars in genmap.get(tgt).items():
         for artifact in jars:
-          path = self.artifact_path(jar, version, name=override_name, suffix=suffix, extension=extension, artifact_ext=artifact_ext)
+          path = self.artifact_path(jar, version, name=override_name, suffix=suffix,
+                                    extension=extension, artifact_ext=artifact_ext)
           safe_mkdir(os.path.dirname(path))
           shutil.copy(os.path.join(basedir, artifact), path)
 
@@ -543,8 +544,12 @@ class JarPublish(JarTask, ScmPublish):
           target = target.derived_from
         for cur_tgt in target_list:
           if self.context.products.get(extra_product).has(cur_tgt):
-            copy_artifact(cur_tgt, jar, version, typename=extra_product, suffix="-{0}".format(classifier), extension=extension, override_name=override_name)
+            copy_artifact(cur_tgt, jar, version, typename=extra_product,
+                          suffix="-{0}".format(classifier), extension=extension,
+                          override_name=override_name)
             confs.add(classifier)
+            # Supply extra data about this jar into the Ivy template, so that Ivy will publish it
+            # to the final destination.
             extra_confs.append({'name': override_name,
                                 'type': classifier,
                                 'conf': classifier,
