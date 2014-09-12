@@ -6,21 +6,23 @@ from __future__ import (nested_scopes, generators, division, absolute_import, wi
                         print_function, unicode_literals)
 
 from collections import defaultdict
+from pkg_resources import resource_string
 import inspect
 import optparse
 import os
 import re
 
-from pkg_resources import resource_string
+from twitter.common.collections.ordereddict import OrderedDict
+
 from pants.backend.core.tasks.task import Task
 from pants.base.build_manual import get_builddict_info
 from pants.base.exceptions import TaskError
 from pants.base.generator import Generator, TemplateData
-from pants.base.target import AbstractTarget
+from pants.base.target import Target
 from pants.goal.option_helpers import add_global_options
 from pants.goal.goal import Goal
 from pants.util.dirutil import safe_open
-from twitter.common.collections.ordereddict import OrderedDict
+
 
 
 def indent_docstring_by_n(s, n=1):
@@ -122,6 +124,7 @@ def entry_for_one_method(nom, method):
 # :param string foo: blah blah blah
 param_re = re.compile(r':param (?P<type>[A-Za-z0-9_]* )?(?P<param>[^:]*):(?P<desc>.*)')
 
+
 # regex for docstring lines of the form
 # :type foo: list of strings
 type_re = re.compile(r':type (?P<param>[^:]*):(?P<type>.*)')
@@ -130,26 +133,41 @@ type_re = re.compile(r':type (?P<param>[^:]*):(?P<type>.*)')
 def shard_param_docstring(s):
   """Shard a Target class' sphinx-flavored __init__ docstring by param
 
-  E.g., if "param" were spelled "pxram", and "type" was "txpe" then
+  E.g., if the docstring is
 
-  :pxram float x: x coordinate
-  :pxram y: y coordinate
-  :txpe y: float
+  :param float x: x coordinate
+     blah blah blah
+  :param y: y coordinate
+  :type y: float
 
   should return
   OrderedDict(
-    "x" : {"type": "float", "param": "x coordinate"},
+    "x" : {"type": "float", "param": "x coordinate\n   blah blah blah"},
     "y" : {"type": "float", "param": "y coordinate"},
   )
   """
+
+  # state: what I'm "recording" right now.
+  # ("x", "param") : recording contents of a :param x: blah blah blah
+  # ("x", "type") : recording contents of a :type x: blah blah blah
+  # () not recording anything
   state = ()
+
+  # accumulator: place to "record" current thing
+  # for param x above, we'd expect ['x coordinate', '  blah blah blah']
   accumulator = []
+
+  # shards: return value
   shards = OrderedDict()
+
   s = s or ''
   for line in s.splitlines():
+    # If this line is indented, keep recording whatever we're recording:
     if line and line[0].isspace():
       accumulator.append(line)
       continue
+    # This line isn't indented, so stop recording the previous thing.
+    # If we were indeed recording something, put it in our return value.
     if state:
       param, type_or_desc = state
       if not param in shards:
@@ -157,6 +175,9 @@ def shard_param_docstring(s):
       shards[param][type_or_desc] = '\n'.join(accumulator)
       state = ()
       accumulator = []
+    # This line isn't indented. Maybe it's a :param line, maybe a :type line,
+    # maybe something we don't care about.
+    # If it matches our :param pattern, update state and start "recording"
     param_m = param_re.match(line)
     if param_m:
       param = param_m.group('param')
@@ -167,12 +188,16 @@ def shard_param_docstring(s):
           shards[param] = {}
         shards[param]['type'] = param_m.group('type')
       continue
+    # If it matches our :type pattern, update state and start "recording"
     type_m = type_re.match(line)
     if type_m:
       state = (type_m.group('param'), 'type')
       accumulator = [type_m.group('type')]
       continue
+    # It doesn't match a pattern we care about.
     state = ()
+  # We're done looping through lines, so stop recording the previous thing.
+  # If we were indeed recording something, put it in our return value.
   if state:
     param, type_or_desc = state
     if not param in shards:
@@ -186,14 +211,14 @@ def entry_for_one_class(nom, cls):
   nom: name like 'python_binary'
   cls: class like pants.python_binary"""
 
-  if issubclass(cls, AbstractTarget):
+  if issubclass(cls, Target):
     # special case for Target classes: "inherit" information up the class tree.
 
     args_accumulator = []
     defaults_accumulator = ()
     docs_accumulator = []
     for c in inspect.getmro(cls):
-      if not issubclass(c, AbstractTarget): continue
+      if not issubclass(c, Target): continue
       if not inspect.ismethod(c.__init__): continue
       args, _, _, defaults = inspect.getargspec(c.__init__)
       args_accumulator = args[1:] + args_accumulator
