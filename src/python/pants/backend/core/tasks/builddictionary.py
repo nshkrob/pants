@@ -142,67 +142,49 @@ def shard_param_docstring(s):
 
   should return
   OrderedDict(
-    "x" : {"type": "float", "param": "x coordinate\n   blah blah blah"},
-    "y" : {"type": "float", "param": "y coordinate"},
+    'x' : {'type': 'float', 'param': 'x coordinate\n   blah blah blah'},
+    'y' : {'type': 'float', 'param': 'y coordinate'},
   )
   """
 
-  # state: what I'm "recording" right now.
-  # ("x", "param") : recording contents of a :param x: blah blah blah
-  # ("x", "type") : recording contents of a :type x: blah blah blah
-  # () not recording anything
-  state = ()
-
-  # accumulator: place to "record" current thing
-  # for param x above, we'd expect ['x coordinate', '  blah blah blah']
-  accumulator = []
+  # state: what I'm "recording" right now. Needed for multi-line fields.
+  # ('x', 'param') : recording contents of a :param x: blah blah blah
+  # ('x', 'type') : recording contents of a :type x: blah blah blah
+  # ('!forget', '!') not recording useful things; purged before returning
+  state = ('!forget', '!')
 
   # shards: return value
-  shards = OrderedDict()
+  shards = OrderedDict([('!forget', {'!': ''})])
 
   s = s or ''
   for line in s.splitlines():
-    # If this line is indented, keep recording whatever we're recording:
+    # If this line is indented, keep "recording" whatever we're recording:
     if line and line[0].isspace():
-      accumulator.append(line)
-      continue
-    # This line isn't indented, so stop recording the previous thing.
-    # If we were indeed recording something, put it in our return value.
-    if state:
       param, type_or_desc = state
-      if not param in shards:
-        shards[param] = {}
-      shards[param][type_or_desc] = '\n'.join(accumulator)
-      state = ()
-      accumulator = []
-    # This line isn't indented. Maybe it's a :param line, maybe a :type line,
-    # maybe something we don't care about.
-    # If it matches our :param pattern, update state and start "recording"
-    param_m = param_re.match(line)
-    if param_m:
-      param = param_m.group('param')
-      state = (param, 'param')
-      accumulator = [param_m.group('desc')]
-      if param_m.group('type'):
-        if not param in shards:
-          shards[param] = {}
-        shards[param]['type'] = param_m.group('type')
-      continue
-    # If it matches our :type pattern, update state and start "recording"
-    type_m = type_re.match(line)
-    if type_m:
-      state = (type_m.group('param'), 'type')
-      accumulator = [type_m.group('type')]
-      continue
-    # It doesn't match a pattern we care about.
-    state = ()
-  # We're done looping through lines, so stop recording the previous thing.
-  # If we were indeed recording something, put it in our return value.
-  if state:
-    param, type_or_desc = state
-    if not param in shards:
-      shards[param] = {}
-    shards[param][type_or_desc] = '\n'.join(accumulator)
+      shards[param][type_or_desc] += '\n' + line
+    else:  # line not indented, starting something new
+      # if a :param foo: line...
+      if param_re.match(line):
+        param_m = param_re.match(line)
+        param_name = param_m.group('param')
+        state = (param_name, 'param')
+        if not param_name in shards:
+          shards[param_name] = {}
+        if param_m.group('type'):
+          shards[param_name]['type'] = param_m.group('type')
+        shards[param_name]['param'] = param_m.group('desc')
+      # if a :type foo: line...
+      elif type_re.match(line):
+        type_m = type_re.match(line)
+        param_name = type_m.group('param')
+        state = (param_name, 'type')
+        if not param_name in shards:
+          shards[param_name] = {}
+        shards[param_name]['type'] = type_m.group('type')
+      # else, nothing that we want to "record"
+      else:
+        state = ('!forget', '!')
+  del shards['!forget']
   return shards
 
 
