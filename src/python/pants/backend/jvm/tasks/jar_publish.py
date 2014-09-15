@@ -586,24 +586,20 @@ class JarPublish(JarTask, ScmPublish):
         extra_config = publish_extras[extra_product]
         override_name = None
         if 'override_name' in extra_config:
-          # If the supplied string has a '{0}' in it, replace it with the current jar name. If not,
-          # the string will be taken verbatim.
-          override_name = extra_config['override_name'].format(jar.name)
-        classifier = ''
-        if 'classifier' in extra_config:
-          classifier = extra_config['classifier']
-        extension = 'jar'
-        if 'extension' in extra_config:
-          extension = extra_config['extension']
+          # If the supplied string has a '{target_provides_name}' in it, replace it with the
+          # current jar name. If not, the string will be taken verbatim.
+          override_name = extra_config['override_name'].format(target_provides_name=jar.name)
+        classifier = extra_config['classifier'] if 'classifier' in extra_config else ''
+        extension = extra_config['extension'] if 'extension' in extra_config else 'jar'
 
         # Build a list of targets to check. This list will be the current target, plus the entire
         # derived_from chain.
-        target_list = [tgt]
+        target_set = set([tgt])
         target = tgt
         while target.derived_from != target:
-          target_list.append(target.derived_from)
+          target_set.add(target.derived_from)
           target = target.derived_from
-        for cur_tgt in target_list:
+        for cur_tgt in target_set:
           if self.context.products.get(extra_product).has(cur_tgt):
             copy_artifact(cur_tgt, jar, version, typename=extra_product,
                           suffix="-{0}".format(classifier), extension=extension,
