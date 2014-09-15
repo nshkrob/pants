@@ -67,7 +67,7 @@ class JarPublishIntegrationTest(PantsRunIntegrationTest):
                         'jar-publish': {
                           'publish_extras': {
                             'extra_test_jar_example': {
-                              'override_name': '{0}-extra_example',
+                              'override_name': '{target_provides_name}-extra_example',
                               'classifier': 'classy',
                               },
                             },
